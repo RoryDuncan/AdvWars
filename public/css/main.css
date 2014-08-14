@@ -1,0 +1,13 @@
+body {
+	overflow: none;
+}
+
+.wrapper {
+  margin: 0 auto;
+  width: auto;
+}
+
+canvas {
+	vertical-align: center;
+	margin: 0 auto;
+}

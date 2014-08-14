@@ -1,0 +1,15 @@
+{
+	"folders":
+	[
+		{
+			"path": "/C/Users/Roar-Yawn/sandbox/AdvWars"
+		}
+	],
+	"settings": {
+		"CoffeeScript":
+		{
+			"compileDir": "../javascript"
+		}
+	}
+
+}

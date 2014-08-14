@@ -1,0 +1,31 @@
+{
+  "name": "AdvWars",
+  "version": "0.0.1",
+  "description": "An html5 Advanced Wars Clone",
+  "main": "index.js",
+  "dependencies": {
+    "browserify": "^5.9.1",
+    "node-simple-router": "^0.9.2-8",
+    "watchify": "^1.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "watchify ./public/javascript/browser.js -o public/javascript/bundle.js -v -d",
+    "server": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RoryDuncan/AdvWars.git"
+  },
+  "keywords": [
+    "html5",
+    "canvas"
+  ],
+  "author": "Rory Duncan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RoryDuncan/AdvWars/issues"
+  },
+  "homepage": "https://github.com/RoryDuncan/AdvWars"
+}

@@ -1,0 +1,179 @@
+(function() {
+  var EventEmitter, ImageLoader, extend,
+    __slice = [].slice,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  module.exports.EventEmitter = EventEmitter = (function() {
+
+    function EventEmitter() {
+      this.__events = {};
+    }
+
+    EventEmitter.prototype.on = function(name, fn, context) {
+      if (this.__events === void 0) {
+        this.__events = {};
+      }
+      this.__events[name] = {
+        fn: fn,
+        context: context
+      };
+      return this;
+    };
+
+    EventEmitter.prototype.off = function(name) {
+      delete this.__events[name];
+      return this;
+    };
+
+    EventEmitter.prototype.get = function(name) {
+      if (this.__events === void 0) {
+        return;
+      }
+      return this.__events[name];
+    };
+
+    EventEmitter.prototype.trigger = function(name, args) {
+      var f;
+      if (args == null) {
+        args = [];
+      }
+      if (this.__events === void 0) {
+        return;
+      }
+      f = this.get(name);
+      if (f === void 0) {
+        return;
+      }
+      f.fn.apply(f.context, args);
+      return this;
+    };
+
+    return EventEmitter;
+
+  })();
+
+  module.exports.Queue = function() {
+    var locked, stack;
+    stack = [];
+    locked = [];
+    this.lock = function(item) {};
+    this.push = function(item) {};
+    this.pop = function() {};
+    this.call = function(scope) {
+      var fn, _i, _len, _ref, _results;
+      _ref = this._stack;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        fn = _ref[_i];
+        _results.push(fn.call(scope || fn));
+      }
+      return _results;
+    };
+    return this;
+  };
+
+  module.exports.extend = extend = function() {
+    var base, extended, key, obj, objs, _i, _len;
+    extended = arguments[0], objs = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    if (objs.length < 2) {
+      return extended;
+    }
+    for (_i = 0, _len = objs.length; _i < _len; _i++) {
+      obj = objs[_i];
+      base = obj;
+      return;
+      for (key in base) {
+        extended[key] = base[key];
+        console.log(key);
+      }
+    }
+    return extended;
+  };
+
+  module.exports.ImageLoader = ImageLoader = (function(_super) {
+
+    __extends(ImageLoader, _super);
+
+    function ImageLoader(items, callback, individualFileCallback) {
+      var count, filetype, finished, itemDone, load, results, startTime, total;
+      if (!items) {
+        return;
+      }
+      console.groupCollapsed("%cImage Loader", "font-size: 13px; font-family: 'Helvetica';");
+      startTime = Date.now();
+      count = 0;
+      total = items.length;
+      results = [];
+      console.log("%cloading: 0%", "color: #aab; font-family: 'Helvetica';");
+      filetype = this.filetype;
+      load = function(path) {
+        var i;
+        i = new window[filetype]();
+        i.addEventListener("load", itemDone);
+        i.src = path;
+        return results.push(i);
+      };
+      finished = function(e) {
+        this.duration = Date.now() - startTime;
+        console.log("Done.");
+        console.log("%cTime Elapsed: " + this.duration + " milliseconds.", "color:#a55;font-family: 'Helvetica';");
+        console.groupEnd("%cImage Loader", "font-size: 13px; font-family: 'Helvetica';");
+        this.results = results;
+        if (callback) {
+          return callback.call(this, results);
+        }
+      };
+      itemDone = function(e) {
+        var percentage;
+        count++;
+        percentage = 100 / (total / count) + "%";
+        console.log("%cloading: " + percentage, "color: #aab;font-family: 'Helvetica';");
+        if (individualFileCallback) {
+          individualFileCallback.call(this, e);
+        }
+        if (count === total) {
+          return finished();
+        }
+      };
+      this.on("itemDone", itemDone);
+      this.on("done", finished);
+      items.forEach(load);
+    }
+
+    ImageLoader.prototype.filetype = "Image";
+
+    return ImageLoader;
+
+  })(EventEmitter);
+
+  module.exports.getJSON = function(url, callbacks) {
+    var ajax, data, options;
+    options = callbacks || {};
+    data = void 0;
+    ajax = $.getJSON(url);
+    return ajax.complete(function() {
+      try {
+        data = $.parseJSON(ajax.responseText);
+      } catch (e) {
+        options.error.call(options.scope || null, e, ajax);
+        return;
+      }
+      options.success.call(options.scope || null, data, ajax);
+    });
+  };
+
+  module.exports.isArray = Array.isArray || function(thing) {
+    return Object.prototype.toString.call(thing === "[object Array]");
+  };
+
+  module.exports.isInt = function(num) {
+    if (num / Math.floor(num) === 1 || num / Math.floor(num) === -1) {
+      return true;
+    }
+    return false;
+  };
+
+}).call(this);
+
+// Generated by CoffeeScript 1.5.0-pre

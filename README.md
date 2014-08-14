@@ -1,2 +1,2 @@
-AdvWars
-=======
+A simple Advanced Wars Clone
+ =======
