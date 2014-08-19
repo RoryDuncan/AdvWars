@@ -53,20 +53,40 @@
 
   })();
 
-  module.exports.Queue = function() {
-    var locked, stack;
-    stack = [];
-    locked = [];
-    this.lock = function(item) {};
-    this.push = function(item) {};
-    this.pop = function() {};
-    this.call = function(scope) {
-      var fn, _i, _len, _ref, _results;
-      _ref = this._stack;
+  module.exports.RenderList = function(game) {
+    var list;
+    this.game = game;
+    list = [];
+    this.set = this.add = function(options) {
+      var fn, name;
+      name = options.name;
+      fn = options.fn || new Function("console.log('blank fn')");
+      list[options.layer] = {
+        name: name,
+        fn: fn,
+        scope: options.scope
+      };
+    };
+    this.remove = this["delete"] = function(layer) {
+      var del;
+      del = list[layer];
+      delete list[layer];
+      return del;
+    };
+    this.render = function(layer) {
+      var lyr;
+      lyr = list[layer];
+      return lyr.fn.call(lyr.scope || lyr.fn || null, lyr);
+    };
+    this.renderAll = function() {
+      var index, item, _i, _len, _results;
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        fn = _ref[_i];
-        _results.push(fn.call(scope || fn));
+      for (index = _i = 0, _len = list.length; _i < _len; index = ++_i) {
+        item = list[index];
+        if (!item) {
+          continue;
+        }
+        _results.push(item.fn.call(item.scope || item.fn || null, item));
       }
       return _results;
     };
@@ -74,18 +94,15 @@
   };
 
   module.exports.extend = extend = function() {
-    var base, extended, key, obj, objs, _i, _len;
+    var extended, key, obj, objs, _i, _len;
     extended = arguments[0], objs = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-    if (objs.length < 2) {
+    if (!objs) {
       return extended;
     }
     for (_i = 0, _len = objs.length; _i < _len; _i++) {
       obj = objs[_i];
-      base = obj;
-      return;
-      for (key in base) {
-        extended[key] = base[key];
-        console.log(key);
+      for (key in obj) {
+        extended[key] = obj[key];
       }
     }
     return extended;
@@ -100,13 +117,13 @@
       if (!items) {
         return;
       }
-      console.groupCollapsed("%cImage Loader", "font-size: 13px; font-family: 'Helvetica';");
       startTime = Date.now();
       count = 0;
       total = items.length;
       results = [];
-      console.log("%cloading: 0%", "color: #aab; font-family: 'Helvetica';");
       filetype = this.filetype;
+      console.groupCollapsed("%cLoading Images.", "color: #0b7");
+      console.log("%cProgress: 0%", "color:#ccc");
       load = function(path) {
         var i;
         i = new window[filetype]();
@@ -116,10 +133,9 @@
       };
       finished = function(e) {
         this.duration = Date.now() - startTime;
-        console.log("Done.");
-        console.log("%cTime Elapsed: " + this.duration + " milliseconds.", "color:#a55;font-family: 'Helvetica';");
-        console.groupEnd("%cImage Loader", "font-size: 13px; font-family: 'Helvetica';");
+        console.log(("%c" + total + " Images Loaded. Time Elapsed: ") + this.duration + " milliseconds.", "color: #800");
         this.results = results;
+        console.groupEnd("%cLoading Images.", "color: #0b7");
         if (callback) {
           return callback.call(this, results);
         }
@@ -128,7 +144,7 @@
         var percentage;
         count++;
         percentage = 100 / (total / count) + "%";
-        console.log("%cloading: " + percentage, "color: #aab;font-family: 'Helvetica';");
+        console.log("%cProgress: " + percentage, "color:#ccc");
         if (individualFileCallback) {
           individualFileCallback.call(this, e);
         }

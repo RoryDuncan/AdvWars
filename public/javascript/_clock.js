@@ -448,18 +448,7 @@ var Clock = function(args) {
             duration = this.duration,
             doesIntervalMatchNow = (now - (start + this.startDelay))  % (interval + duration),
             intervalHasPassed = now - (this.lastCall === undefined ? start : this.lastCall);
-  
-        /*
-        console.clear();
-        console.log("name:", this.name);
-        console.log("Delta:", self.delta );
-        console.log("-----");
-        console.log("start:", start);
-        console.log("doesIntervalMatchNow", doesIntervalMatchNow);
-        console.log("interval:", interval);
-        console.log("now:", now);
-        console.log("lastCall'ed:", this.lastCall);
-        */
+
         
         if ( doesIntervalMatchNow >= 0 && doesIntervalMatchNow <= delta && (now - this.lastCall) > (interval*0.99) ) return true;
         else return false;

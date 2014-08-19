@@ -2,59 +2,65 @@
 
 utils = require "./_utils"
 
-Tile  = (@tilename, @position, SpriteHash) ->
+calculateTileRenderPositions = () ->
+  size = @size # width and height of the tile
+  zoom = @grid.zoom # zoom modifier
 
-  Tile::SpriteHash = if SpriteHash then SpriteHash else {}
+  #offsets
+  xo = ( @grid.offset.x * size )
+  yo = ( @grid.offset.y * size )
 
-  @setSpriteHash = (SpriteHash) ->
-    Tile::SpriteHash = SpriteHash
+  #positions
+  xp = ( @position.x * size ) * zoom
+  yp = ( @position.y * size ) * zoom
 
-  @tilename = @tilename or "blank"
-  @tilesize = @game.canvas.width / 20
-  @renderBlank = () ->
+  # widths (with fillRect / strokeRect it is the x and y coordinates on the canvas)
+  xw = (xo + size + xp) * zoom
+  yw = (xo + size + xp) * zoom
 
-    @game.context.strokeStyle = "#fff"
 
-    t = @tilesize # width and height of the tile
-    z = @zoom # zoom modifier
-    #offsets
-    xo = ( @offset.x * t )
-    yo = ( @offset.y * t )
 
-    #positions
-    xp = ( @position.x * t ) * z
-    yp = ( @position.y * t ) * z
+Tile  = (@name, @position, @size, @game, @grid) ->
 
-    # widths (with fillRect / strokeRect it is the x and y coordinates on the canvas)
-    xw = (xo + t + xp) * z
-    yw = (xo + t + xp) * z
-
-    #console.log xp, yp
-    @game.context.fillStyle = "#f0f"
-    @game.context.strokeRect( xp + xo, yp + yo, t, t)
-
-  @render = () ->
-    @renderBlank.call(@) if @tilename is "blank"
+  @Sprites = @game.Sprites
+  @name = @name or "plain"
 
   return @
 
+Tile::render = () ->
 
-# zooming in / out of tiles
-Tile::zoom = 1
-# the values that change where the grid is panned
-Tile::offset = {x:0, y: 0}
+  sprite = @Sprites[@name]
+  sprite.game = @game
+
+  size = @size # width and height of the tile
+  zoom = @grid.zoom # zoom modifier
+
+  #offsets
+  xo = ( @grid.offset.x * size )
+  yo = ( @grid.offset.y * size )
+
+  #positions
+  xp = ( @position.x * size ) * zoom
+  yp = ( @position.y * size ) * zoom
+
+  # widths (with fillRect / strokeRect it is the x and y coordinates on the canvas)
+  xw = (xo + size + xp) * zoom
+  yw = (xo + size + xp) * zoom
+  sprite.render.call(sprite, (xp + xo), (yp + yo), size, size, zoom)
+
+
 
 module.exports.Tile = Tile
 
 
 
-TileGrid = (game, @data, dimensions, SpriteHash) ->
+TileGrid = (@game, @data, @dimensions) ->
 
   Tile::game = game
-  TileGrid::game = game
   @tiles = []
-  width = dimensions.width
-  height = dimensions.height
+  width = @dimensions.width
+  height = @dimensions.height
+  tilesize = @dimensions.tilesize
 
   ### Convert the data into a normalized grid data  ###
 
@@ -66,7 +72,8 @@ TileGrid = (game, @data, dimensions, SpriteHash) ->
   y = -1 * y0           # starting y value before iteration
 
   for i in [0...(dimensions.width * dimensions.height)]
-    tile = new Tile(null, {x,y}, SpriteHash)
+    tilename = if @data[1] is "-all" then @data[0] else @data[i] 
+    tile = new Tile(tilename, {x,y}, tilesize, @game, @)
     @tiles.push tile
 
     if x is 0 and y is 0
@@ -78,28 +85,63 @@ TileGrid = (game, @data, dimensions, SpriteHash) ->
       y += 1
     else x++
 
+  @offset = {}
+  @offset.x = x0 + 1
+  @offset.y = y0 + 1
+  @zoom = 1
+
   return @
 
 
-TileGrid::setZoom = (i = 1) ->
-  Tile::zoom = i
+TileGrid::setZoom = (zoom = 1) ->
+  @zoom = zoom
 
 TileGrid::crossZoom = (modifier) ->
-  Tile::zoom = i * modifier
+  @zoom = @zoom * modifier
 
 TileGrid::move = (x = 0, y = 0) ->
-  Tile::offset.x += x
-  Tile::offset.y += y
+  @offset.x += x
+  @offset.y += y
+  @render()
 
 TileGrid::changeTile = (x,y, tilename) ->
   console.log "wow"
 
 TileGrid::render = () ->
 
-  @game.context.fillStyle = "#000"
-  @game.context.fillRect(0,0,@game.canvas.width,@game.canvas.height)
-
   @tiles.forEach (tile) ->
-    tile.render.call(tile)
+      tile.render.call(tile)
 
 module.exports.TileGrid = TileGrid
+
+
+# Map is a wrapper object
+
+Map = (@name, @tilegrid, @game, @backgroundColor = "#48c") ->
+
+  @drawBackground = () ->
+    @game.context.fillStyle = @backgroundColor
+    @game.context.fillRect 0, 0, @game.canvas.width, @game.canvas.height
+
+  return @
+
+Map::render = () ->
+
+  @tilegrid.render.call(@tilegrid)
+
+Map::move = (x = 1,y = 1) ->
+  @tilegrid.move x,y
+
+Map::up = () ->
+  @move 0, -1
+
+Map::down = () ->
+  @move 0, 1
+
+Map::left = () ->
+  @move -1, 0
+
+Map::right = () ->
+  @move 1,0
+
+module.exports.Map = Map

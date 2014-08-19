@@ -1,11 +1,13 @@
 (function() {
-  var $, utils;
+  var $, InputProfile, consoleColor, utils;
 
   $ = require("jquery");
 
   utils = require("./_utils");
 
-  module.exports = function(el) {
+  consoleColor = "color:#8b8";
+
+  module.exports.InputHandler = function(el) {
     var $el, bound, handler, key, mousemoveHandler;
     if (!$) {
       return;
@@ -111,7 +113,8 @@
       }
       for (keyname in b) {
         if (key[keyname] === e.which) {
-          b[keyname].callback.call(b[keyname], e, b[keyname].data);
+          e.preventDefault();
+          b[keyname].callback.call(b[keyname], e, b[keyname]);
           return;
         }
       }
@@ -142,16 +145,18 @@
         if (bound[eventType]) {
           bound[eventType][keyname] = {
             callback: callback,
-            data: data
+            data: data,
+            scope: (data || {}).scope
           };
         } else {
           bound[eventType] = {};
           bound[eventType][keyname] = {
             callback: callback,
-            data: data
+            data: data,
+            scope: (data || {}).scope
           };
           $el.on(eventType, handler);
-          console.log("Assigning new keyname to ", eventType, " and adding an Event Listener.");
+          console.log("%cAssigning new key('" + keyname + "') to " + eventType + " and adding an Event Listener.", consoleColor);
         }
       }
       return this;
@@ -172,6 +177,77 @@
     };
     return this;
   };
+
+  /*
+  @InputProfiles are used to 
+  keep track of certain keybinding configurations
+  */
+
+
+  InputProfile = function(name, inputHandler, actions, scope) {
+    this.name = name;
+    this.inputHandler = inputHandler;
+    this.actions = actions;
+    this.scope = scope;
+    this._state = "off";
+    this._combined = [];
+    this.combinedWith = [];
+    return this;
+  };
+
+  InputProfile.prototype.multipleInputActions = function(inputMethod) {
+    var eventdetails, inputProf, key, value, _i, _len, _ref, _ref1;
+    console.log("%cProfile " + this.name + " is " + inputMethod + ".", consoleColor);
+    this._state = inputMethod;
+    _ref = this.actions;
+    for (key in _ref) {
+      value = _ref[key];
+      eventdetails = key.split(" ");
+      if (eventdetails.length === 1) {
+        eventdetails = key;
+      }
+      this.inputHandler[inputMethod](eventdetails[0], eventdetails[1], value);
+    }
+    _ref1 = this._combined;
+    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+      inputProf = _ref1[_i];
+      inputProf.multipleInputActions.call(inputProf, inputMethod);
+    }
+    return this.actions;
+  };
+
+  InputProfile.prototype.toggle = function() {
+    if (this._state === "on") {
+      return this.disable();
+    } else if (this._state === "off") {
+      return this.enable();
+    }
+  };
+
+  InputProfile.prototype.enable = function() {
+    return this.multipleInputActions("on");
+  };
+
+  InputProfile.prototype.disable = function() {
+    return this.multipleInputActions("off");
+  };
+
+  InputProfile.prototype.add = function(inputProf) {
+    this._combined.push(inputProf);
+    return this.combinedWith.push(inputProf.name);
+  };
+
+  InputProfile.prototype.remove = function(inputProfname) {
+    var index, item;
+    index = this._combinedWith.indexOf(inputProfname);
+    delete this.combinedWith[index];
+    item = this._combined[index];
+    item.multipleInputActions("off");
+    delete this._combined[index];
+    return item;
+  };
+
+  module.exports.InputProfile = InputProfile;
 
 }).call(this);
 

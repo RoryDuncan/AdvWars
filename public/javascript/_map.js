@@ -1,56 +1,58 @@
 (function() {
-  var Tile, TileGrid, utils;
+  var Map, Tile, TileGrid, calculateTileRenderPositions, utils;
 
   utils = require("./_utils");
 
-  Tile = function(tilename, position, SpriteHash) {
-    this.tilename = tilename;
+  calculateTileRenderPositions = function() {
+    var size, xo, xp, xw, yo, yp, yw, zoom;
+    size = this.size;
+    zoom = this.grid.zoom;
+    xo = this.grid.offset.x * size;
+    yo = this.grid.offset.y * size;
+    xp = (this.position.x * size) * zoom;
+    yp = (this.position.y * size) * zoom;
+    xw = (xo + size + xp) * zoom;
+    return yw = (xo + size + xp) * zoom;
+  };
+
+  Tile = function(name, position, size, game, grid) {
+    this.name = name;
     this.position = position;
-    Tile.prototype.SpriteHash = SpriteHash ? SpriteHash : {};
-    this.setSpriteHash = function(SpriteHash) {
-      return Tile.prototype.SpriteHash = SpriteHash;
-    };
-    this.tilename = this.tilename || "blank";
-    this.tilesize = this.game.canvas.width / 20;
-    this.renderBlank = function() {
-      var t, xo, xp, xw, yo, yp, yw, z;
-      this.game.context.strokeStyle = "#fff";
-      t = this.tilesize;
-      z = this.zoom;
-      xo = this.offset.x * t;
-      yo = this.offset.y * t;
-      xp = (this.position.x * t) * z;
-      yp = (this.position.y * t) * z;
-      xw = (xo + t + xp) * z;
-      yw = (xo + t + xp) * z;
-      this.game.context.fillStyle = "#f0f";
-      return this.game.context.strokeRect(xp + xo, yp + yo, t, t);
-    };
-    this.render = function() {
-      if (this.tilename === "blank") {
-        return this.renderBlank.call(this);
-      }
-    };
+    this.size = size;
+    this.game = game;
+    this.grid = grid;
+    this.Sprites = this.game.Sprites;
+    this.name = this.name || "plain";
     return this;
   };
 
-  Tile.prototype.zoom = 1;
-
-  Tile.prototype.offset = {
-    x: 0,
-    y: 0
+  Tile.prototype.render = function() {
+    var size, sprite, xo, xp, xw, yo, yp, yw, zoom;
+    sprite = this.Sprites[this.name];
+    sprite.game = this.game;
+    size = this.size;
+    zoom = this.grid.zoom;
+    xo = this.grid.offset.x * size;
+    yo = this.grid.offset.y * size;
+    xp = (this.position.x * size) * zoom;
+    yp = (this.position.y * size) * zoom;
+    xw = (xo + size + xp) * zoom;
+    yw = (xo + size + xp) * zoom;
+    return sprite.render.call(sprite, xp + xo, yp + yo, size, size, zoom);
   };
 
   module.exports.Tile = Tile;
 
-  TileGrid = function(game, data, dimensions, SpriteHash) {
-    var centerIndex, evenOffset, height, i, tile, width, x, x0, y, y0, _i, _ref, _ref1;
+  TileGrid = function(game, data, dimensions) {
+    var centerIndex, evenOffset, height, i, tile, tilename, tilesize, width, x, x0, y, y0, _i, _ref, _ref1;
+    this.game = game;
     this.data = data;
+    this.dimensions = dimensions;
     Tile.prototype.game = game;
-    TileGrid.prototype.game = game;
     this.tiles = [];
-    width = dimensions.width;
-    height = dimensions.height;
+    width = this.dimensions.width;
+    height = this.dimensions.height;
+    tilesize = this.dimensions.tilesize;
     /* Convert the data into a normalized grid data
     */
 
@@ -63,10 +65,11 @@
     x = -1 * x0;
     y = -1 * y0;
     for (i = _i = 0, _ref1 = dimensions.width * dimensions.height; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
-      tile = new Tile(null, {
+      tilename = this.data[1] === "-all" ? this.data[0] : this.data[i];
+      tile = new Tile(tilename, {
         x: x,
         y: y
-      }, SpriteHash);
+      }, tilesize, this.game, this);
       this.tiles.push(tile);
       if (x === 0 && y === 0) {
         tile.center = true;
@@ -79,18 +82,22 @@
         x++;
       }
     }
+    this.offset = {};
+    this.offset.x = x0 + 1;
+    this.offset.y = y0 + 1;
+    this.zoom = 1;
     return this;
   };
 
-  TileGrid.prototype.setZoom = function(i) {
-    if (i == null) {
-      i = 1;
+  TileGrid.prototype.setZoom = function(zoom) {
+    if (zoom == null) {
+      zoom = 1;
     }
-    return Tile.prototype.zoom = i;
+    return this.zoom = zoom;
   };
 
   TileGrid.prototype.crossZoom = function(modifier) {
-    return Tile.prototype.zoom = i * modifier;
+    return this.zoom = this.zoom * modifier;
   };
 
   TileGrid.prototype.move = function(x, y) {
@@ -100,8 +107,9 @@
     if (y == null) {
       y = 0;
     }
-    Tile.prototype.offset.x += x;
-    return Tile.prototype.offset.y += y;
+    this.offset.x += x;
+    this.offset.y += y;
+    return this.render();
   };
 
   TileGrid.prototype.changeTile = function(x, y, tilename) {
@@ -109,14 +117,56 @@
   };
 
   TileGrid.prototype.render = function() {
-    this.game.context.fillStyle = "#000";
-    this.game.context.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
     return this.tiles.forEach(function(tile) {
       return tile.render.call(tile);
     });
   };
 
   module.exports.TileGrid = TileGrid;
+
+  Map = function(name, tilegrid, game, backgroundColor) {
+    this.name = name;
+    this.tilegrid = tilegrid;
+    this.game = game;
+    this.backgroundColor = backgroundColor != null ? backgroundColor : "#48c";
+    this.drawBackground = function() {
+      this.game.context.fillStyle = this.backgroundColor;
+      return this.game.context.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+    };
+    return this;
+  };
+
+  Map.prototype.render = function() {
+    return this.tilegrid.render.call(this.tilegrid);
+  };
+
+  Map.prototype.move = function(x, y) {
+    if (x == null) {
+      x = 1;
+    }
+    if (y == null) {
+      y = 1;
+    }
+    return this.tilegrid.move(x, y);
+  };
+
+  Map.prototype.up = function() {
+    return this.move(0, -1);
+  };
+
+  Map.prototype.down = function() {
+    return this.move(0, 1);
+  };
+
+  Map.prototype.left = function() {
+    return this.move(-1, 0);
+  };
+
+  Map.prototype.right = function() {
+    return this.move(1, 0);
+  };
+
+  module.exports.Map = Map;
 
 }).call(this);
 

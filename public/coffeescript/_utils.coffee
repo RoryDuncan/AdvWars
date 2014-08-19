@@ -25,56 +25,55 @@ module.exports.EventEmitter = class EventEmitter
 
     return @
 
-module.exports.Queue = () ->
+module.exports.RenderList = (@game) ->
 
-  stack = []
-  locked = []
+  list = []
 
-  @lock = (item) ->
-    # todo
+  @set = @add = (options) ->
+    name = options.name
+    fn = options.fn or new Function("console.log('blank fn')")
+
+    list[options.layer] = {name, fn, scope: options.scope}
     return
 
-  @push = (item) ->
-    # todo
-    return
+  @remove = @delete = (layer) ->
+    del = list[layer]
+    delete list[layer]
+    return del
 
-  @pop = () ->
-    # todo
-    return
+  @render = (layer) ->
+    lyr = list[layer]
+    lyr.fn.call(lyr.scope or lyr.fn or null, lyr)
 
-  @call = (scope) ->
-    # needs testing
-    for fn in @_stack
-      fn.call(scope or fn)
+  @renderAll = () ->
+
+    for item, index in list
+      continue unless item
+      item.fn.call(item.scope or item.fn or null, item)
 
 
   return @
 
 module.exports.extend = extend = (extended, objs...) ->
-  return extended if objs.length < 2
-
+  return extended unless objs
   for obj in objs
-      
-    base = obj
-    return
-
-    for key of base
-      extended[key] = base[key]
-      console.log key
+    for key of obj
+      extended[key] = obj[key]
 
   return extended
+
 
 module.exports.ImageLoader = class ImageLoader extends EventEmitter
 
   constructor: (items, callback, individualFileCallback) ->
     return unless items
-    console.groupCollapsed "%cImage Loader", "font-size: 13px; font-family: 'Helvetica';"
     startTime = Date.now()
     count = 0
     total = items.length
     results = []
-    console.log "%cloading: 0%", "color: #aab; font-family: 'Helvetica';"
     filetype = @filetype
+    console.groupCollapsed "%cLoading Images.", "color: #0b7"
+    console.log "%cProgress: 0%", "color:#ccc"
 
     load = (path) ->
       i = new window[filetype]()
@@ -84,16 +83,16 @@ module.exports.ImageLoader = class ImageLoader extends EventEmitter
 
     finished = (e) ->
       @duration = Date.now() - startTime
-      console.log "Done."
-      console.log "%cTime Elapsed: " + @duration + " milliseconds.", "color:#a55;font-family: 'Helvetica';"
-      console.groupEnd "%cImage Loader", "font-size: 13px; font-family: 'Helvetica';"
+      console.log "%c#{total} Images Loaded. Time Elapsed: " + @duration + " milliseconds.", "color: #800"
+
       @results = results
+      console.groupEnd "%cLoading Images.", "color: #0b7"
       callback.call(@, results) if callback
 
     itemDone = (e) ->
       count++
       percentage = 100 / (total / count) + "%"
-      console.log "%cloading: " + percentage, "color: #aab;font-family: 'Helvetica';"
+      console.log "%cProgress: #{percentage}", "color:#ccc"
       individualFileCallback.call(@, e) if individualFileCallback
       finished() if count is total 
 
@@ -126,3 +125,4 @@ module.exports.isArray = Array.isArray or (thing) ->
 module.exports.isInt = (num) ->
   return true if (num / Math.floor(num) is 1 or num / Math.floor(num) is -1)
   return false
+

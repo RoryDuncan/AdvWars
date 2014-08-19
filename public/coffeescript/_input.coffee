@@ -1,8 +1,10 @@
 
 $ = require "jquery"
 utils = require "./_utils"
+consoleColor = "color:#8b8"
 
-module.exports = (el) ->
+
+module.exports.InputHandler = (el) ->
   return unless $
 
   $el = $(el)
@@ -110,17 +112,17 @@ module.exports = (el) ->
 
 
   handler = (e) ->
-    #e.preventDefault()
+    
     #e.position = utils.getMousePosition(e)
 
     b = bound[e.type]
-    
     return unless b
 
     for keyname of b
       if key[keyname] is e.which
-
-        b[keyname].callback.call( b[keyname], e, b[keyname].data )
+        e.preventDefault()
+        
+        b[keyname].callback.call( b[keyname], e, b[keyname] )
         return
 
   # mouse movement is a special case
@@ -151,12 +153,12 @@ module.exports = (el) ->
       # it should check to see if bound[eventType] exists, if it does, assume an on()
       # has been set for that event
       if bound[eventType]
-        bound[eventType][keyname] = {callback, data}
+        bound[eventType][keyname] = {callback, data, scope: (data or {}).scope}
       else
         bound[eventType] = {}
-        bound[eventType][keyname] = { callback, data }
+        bound[eventType][keyname] = { callback, data, scope: (data or {}).scope}
         $el.on eventType, handler
-        console.log "Assigning new keyname to ", eventType, " and adding an Event Listener."
+        console.log "%cAssigning new key('#{keyname}') to #{eventType} and adding an Event Listener.", consoleColor
       
 
     return @
@@ -176,3 +178,65 @@ module.exports = (el) ->
     return bound[event]
 
   return @
+
+
+###
+@InputProfiles are used to 
+keep track of certain keybinding configurations
+###
+
+InputProfile = (@name, @inputHandler, @actions, @scope) ->
+  @_state = "off"
+  @_combined = []
+  @combinedWith = []
+  return @
+
+InputProfile::multipleInputActions = (inputMethod) ->
+
+  console.log "%cProfile #{@name} is #{inputMethod}.", consoleColor
+
+  @_state = inputMethod 
+
+  # Deal with internal event actions
+
+  for key, value of @actions
+
+    #split into the event and the key, ie:
+    # eventdetails[0] = "keypress"
+    # eventdetails[1] = "numpad4"
+
+    eventdetails = key.split " "
+    eventdetails = key if eventdetails.length is 1
+    @inputHandler[inputMethod] eventdetails[0], eventdetails[1], value
+
+  # then deal with any combined actions via recursion
+  for inputProf in @_combined
+    inputProf.multipleInputActions.call inputProf, inputMethod
+
+  return @actions
+
+InputProfile::toggle = () ->
+  if @_state is "on"
+    @disable()
+  else if @_state is "off"
+    @enable()
+
+InputProfile::enable = () ->
+  @multipleInputActions "on"
+
+InputProfile::disable = () ->
+  @multipleInputActions "off"
+
+InputProfile::add = (inputProf) ->
+  @_combined.push inputProf
+  @combinedWith.push inputProf.name
+
+InputProfile::remove = (inputProfname) ->
+  index = @_combinedWith.indexOf(inputProfname)
+  delete @combinedWith[index]
+  item = @_combined[index]
+  item.multipleInputActions "off"
+  delete @_combined[index]
+  return item
+
+module.exports.InputProfile = InputProfile

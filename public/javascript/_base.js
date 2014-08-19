@@ -1,5 +1,5 @@
 (function() {
-  var Clock, Game, Input, Sprite, base, canvas, clock, game, loader, map, render, spritesheet, tg, utils;
+  var $, Clock, EventEmitter, Game, Sprite, canvas, finishedLoadingImages, game, input, loader, mapUtils, utils;
 
   console.log("%cAdvanced Wars Clone", "color: #c88");
 
@@ -7,36 +7,187 @@
 
   utils = require("./_utils");
 
+  EventEmitter = utils.EventEmitter;
+
   Sprite = require("./_sprites");
 
-  map = require("./_map");
+  mapUtils = require("./_map");
 
-  Input = require("./_input");
+  input = require("./_input");
 
   Clock = require("./_clock");
 
+  $ = require("jquery");
+
   Game = function(canvas, width, height) {
+    var gameloop, render;
     this.canvas = canvas;
     this.width = width;
     this.height = height;
+    gameloop = Clock.Loop;
+    this.__events = {};
     this.width = this.width || window.innerWidth;
-    this.height = this.height || this.width || window.innerHeight;
+    this.height = this.height || window.innerHeight;
     this.context = this.canvas.getContext("2d");
-    this.context.fillStyle = "#4a8";
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+    this.context.fillStyle = "#48c";
     this.context.fillRect(0, 0, this.width, this.height);
-    this.Layer = new utils.Queue();
+    this.Layers = new utils.RenderList(this);
+    this.Sprites = {};
+    this.maps = {};
+    this.inputHandler = new input.InputHandler(document);
+    this.inputHandler.profiles = {};
+    this.clock = new Clock();
+    render = function() {
+      return this.Layers.renderAll.call(this.Layers);
+    };
+    this.__loop = this.clock.loop("render", render, [], this);
+    this.__loop["for"]({
+      interval: 17
+    });
     return this;
   };
 
-  /*   TESTING
+  Game.prototype = EventEmitter.prototype;
+
+  Game.prototype.start = function(mode) {
+    var mapPanProfile, mapPanning, that;
+    console.log("Starting...");
+    this.clock.start();
+    that = this;
+    mapPanning = {
+      "keydown up": that.currentMap.map.up.bind(that.currentMap.map),
+      "keydown down": that.currentMap.map.down.bind(that.currentMap.map),
+      "keydown left": that.currentMap.map.left.bind(that.currentMap.map),
+      "keydown right": that.currentMap.map.right.bind(that.currentMap.map)
+    };
+    mapPanProfile = new input.InputProfile("map-panning", this.inputHandler, mapPanning);
+    this.inputHandler.profiles["map-panning"] = mapPanProfile;
+    return mapPanProfile.enable();
+  };
+
+  Game.prototype.pause = function() {
+    return this.clock.pause();
+  };
+
+  Game.prototype.getMapJSON = function(url) {
+    var promise, that;
+    console.log("Getting Map Data...");
+    that = this;
+    promise = $.getJSON(url);
+    return promise;
+  };
+
+  Game.prototype.getMapFromUrl = function(url) {
+    var promise, that;
+    that = this;
+    promise = this.getMapJSON(url);
+    return promise.then(function(e) {
+      return that._createMap.call(that, e);
+    });
+  };
+
+  Game.prototype.loadMap = function(name) {
+    var map;
+    if (this.maps[name] === void 0) {
+      console.log("Map '" + name + "' wasn't found.");
+      return;
+    }
+    this.currentMap = {
+      name: name,
+      map: this.maps[name]
+    };
+    map = this.maps[name];
+    this.Layers.add({
+      name: "backdrop",
+      layer: 0,
+      fn: map.drawBackground,
+      scope: map
+    });
+    this.Layers.add({
+      name: "map render",
+      layer: 3,
+      fn: map.render,
+      scope: map
+    });
+    console.log("Loading Map '" + name + "'... Done.");
+    return this.trigger("ready");
+  };
+
+  Game.prototype.getSpriteListJSON = function(url, callback) {
+    var promise, that;
+    console.log("Getting SpriteList...");
+    that = this;
+    promise = $.getJSON(url);
+    promise.then(function(responseText) {
+      that.Sprites._list = responseText;
+      return that._createSpriteList.call(that, responseText);
+    });
+    return promise;
+  };
+
+  Game.prototype._createSpriteList = function(spritelist, callback) {
+    var computeSprite, context, elapsed, item, key, list, name, start, val;
+    start = Date.now();
+    list = this.Sprites;
+    context = this;
+    computeSprite = function(o, name, i) {
+      var key, s;
+      if (o.x === void 0) {
+        return;
+      }
+      key = name + (i || "");
+      s = this.Sprites.spritesheet;
+      list[key] = new Sprite(s, {
+        x: o.x,
+        y: o.y,
+        w: o.w,
+        h: o.h
+      });
+      list[key].name = key;
+      list[key].render({
+        x: 100,
+        y: 100
+      });
+      return console.log("Adding Sprite for '" + key + "'");
+    };
+    console.groupCollapsed("%cCreating Sprites From JSON data", "color: #0b7");
+    for (key in spritelist) {
+      item = spritelist[key];
+      for (name in item) {
+        val = item[name];
+        if (utils.isArray(val)) {
+          val.forEach(function(el, index) {
+            return computeSprite.call(context, el, name, index);
+          });
+        } else {
+          computeSprite.call(context, val, name);
+        }
+      }
+    }
+    elapsed = Date.now() - start;
+    console.log("%cDone. Elapsed Time: " + elapsed + "ms", "color: #800");
+    console.groupEnd("%cCreating Sprites From JSON data", "color: #0b7");
+    if (callback) {
+      return callback.call(context);
+    }
+  };
+
+  Game.prototype._createMap = function(mapData) {
+    var name, tilegrid;
+    name = mapData.name;
+    tilegrid = new mapUtils.TileGrid(this, mapData.tiles, mapData.dimensions);
+    return this.maps[name] = new mapUtils.Map(name, tilegrid, this);
+  };
+
+  /*                      @TESTING
   */
 
 
   canvas = document.getElementById("game");
 
-  game = new Game(canvas, 500);
+  game = new Game(canvas);
 
   Sprite.prototype.game = game;
 
@@ -44,51 +195,28 @@
 
   console.log(game);
 
-  clock = new Clock();
+  game.on("ready", game.start, game);
 
-  spritesheet = "NOT LOADED";
-
-  tg = "NOT LOADED";
-
-  render = function() {
-    return console.log();
+  finishedLoadingImages = function(loadedImages) {
+    var mapPromise, spritelistPromise;
+    game.Sprites.spritesheet = loadedImages[0];
+    spritelistPromise = game.getSpriteListJSON("/JSON/spritelist.json");
+    mapPromise = null;
+    spritelistPromise.then(function(e) {
+      mapPromise = game.getMapFromUrl("/JSON/testmap.json");
+      return mapPromise.then(function() {
+        return game.loadMap("testmap");
+      });
+    });
   };
 
-  base = "sprites/";
+  loader = new utils.ImageLoader(["sprites/spritesheet.png"], finishedLoadingImages);
 
-  loader = new utils.ImageLoader([base + "AWspritesheet.png"], function(e) {
-    var input, movementAmount, _i, _results;
-    spritesheet = e[0];
-    tg = new map.TileGrid(game, (function() {
-      _results = [];
-      for (_i = 1; _i <= 64; _i++){ _results.push(_i); }
-      return _results;
-    }).apply(this), {
-      width: 15,
-      height: 15
-    });
-    tg.render();
-    movementAmount = 1;
-    input = new Input(document);
-    input.on("keydown", "up", function(e) {
-      return tg.move(0, (-1) * movementAmount);
-    });
-    input.on("keydown", "down", function(e) {
-      return tg.move(0, movementAmount);
-    });
-    input.on("keydown", "left", function(e) {
-      return tg.move((-1) * movementAmount, 0);
-    });
-    input.on("keydown", "right", function(e) {
-      return tg.move(movementAmount, 0);
-    });
-    render = function() {
-      console.log("super wow");
-      return tg.render();
-    };
-    clock.on("tick", render);
-    return clock.start();
-  });
+  /*
+  
+    movementAmount = 1
+  */
+
 
 }).call(this);
 
