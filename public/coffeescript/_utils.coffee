@@ -126,3 +126,28 @@ module.exports.isInt = (num) ->
   return true if (num / Math.floor(num) is 1 or num / Math.floor(num) is -1)
   return false
 
+module.exports.generateNormalizedGrid = (width, height, iterator, iteratorScope) ->
+  evenOffset = module.exports.isInt(width / 2) ? 0 : 1 # even numbers wont have a perfect grid at 0,0; this fixes that
+  x0 = ~~(width / 2)   # the boundery x value in the normalized grid
+  y0 = ~~(height / 2)   # the first y value in the normalized grid
+  centerIndex = null    # may be useful to know where the center is, store for later
+  x = -1 * x0           # starting x value before iteration
+  y = -1 * y0           # starting y value before iteration
+
+  basicGrid = []
+
+  for i in [0...(width * height)]
+    normalData = {x,y,x0,y0}
+    if x is 0 and y is 0
+      normalData.centerIndex = true
+      centerIndex = i
+
+    basicGrid.push normalData
+    iterator.call (iteratorScope or null), normalData, i
+
+    if x is (x0 - evenOffset)
+      x = (-1 * x0)
+      y += 1
+    else x++
+
+  return basicGrid

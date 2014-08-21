@@ -64,30 +64,21 @@ TileGrid = (@game, @data, @dimensions) ->
 
   ### Convert the data into a normalized grid data  ###
 
-  evenOffset = utils.isInt(width / 2) ? 0 : 1 # even numbers wont have a perfect grid at 0,0; this fixes that
-  x0 = ~~(width / 2)   # the boundery x value in the normalized grid
-  y0 = ~~(height / 2)   # the first y value in the normalized grid
-  centerIndex = null    # may be useful to know where the center is, store for later
-  x = -1 * x0           # starting x value before iteration
-  y = -1 * y0           # starting y value before iteration
-
-  for i in [0...(dimensions.width * dimensions.height)]
+  # iterator Fn
+  createTiles = (coords, i) ->
+    
     tilename = if @data[1] is "-all" then @data[0] else @data[i] 
-    tile = new Tile(tilename, {x,y}, tilesize, @game, @)
+    tile = new Tile(tilename, coords, tilesize, @game, @)
     @tiles.push tile
+    return
 
-    if x is 0 and y is 0
-      tile.center = true # mark that node
-      centerIndex = i # keep a reference, as well
-
-    if x is (x0 - evenOffset)
-      x = (-1 * x0)
-      y += 1
-    else x++
+  # the magic
+  utils.generateNormalizedGrid width, height, createTiles, @
 
   @offset = {}
-  @offset.x = x0 + 1
-  @offset.y = y0 + 1
+  @offset.origin = {}
+  @offset.x = @offset.origin.x = ~~(width / 2) 
+  @offset.y = @offset.origin.y = ~~(height / 2) 
   @zoom = 1
 
   return @
@@ -103,6 +94,13 @@ TileGrid::move = (x = 0, y = 0) ->
   @offset.x += x
   @offset.y += y
   @render()
+
+TileGrid::AlignToOrigin = () ->
+  @offset.origin.x = @offset.origin.x
+  @offset.origin.y = @offset.origin.y
+  return
+
+
 
 TileGrid::changeTile = (x,y, tilename) ->
   console.log "wow"

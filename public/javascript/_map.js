@@ -44,7 +44,7 @@
   module.exports.Tile = Tile;
 
   TileGrid = function(game, data, dimensions) {
-    var centerIndex, evenOffset, height, i, tile, tilename, tilesize, width, x, x0, y, y0, _i, _ref, _ref1;
+    var createTiles, height, tilesize, width;
     this.game = game;
     this.data = data;
     this.dimensions = dimensions;
@@ -56,35 +56,17 @@
     /* Convert the data into a normalized grid data
     */
 
-    evenOffset = (_ref = utils.isInt(width / 2)) != null ? _ref : {
-      0: 1
-    };
-    x0 = ~~(width / 2);
-    y0 = ~~(height / 2);
-    centerIndex = null;
-    x = -1 * x0;
-    y = -1 * y0;
-    for (i = _i = 0, _ref1 = dimensions.width * dimensions.height; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+    createTiles = function(coords, i) {
+      var tile, tilename;
       tilename = this.data[1] === "-all" ? this.data[0] : this.data[i];
-      tile = new Tile(tilename, {
-        x: x,
-        y: y
-      }, tilesize, this.game, this);
+      tile = new Tile(tilename, coords, tilesize, this.game, this);
       this.tiles.push(tile);
-      if (x === 0 && y === 0) {
-        tile.center = true;
-        centerIndex = i;
-      }
-      if (x === (x0 - evenOffset)) {
-        x = -1 * x0;
-        y += 1;
-      } else {
-        x++;
-      }
-    }
+    };
+    utils.generateNormalizedGrid(width, height, createTiles, this);
     this.offset = {};
-    this.offset.x = x0 + 1;
-    this.offset.y = y0 + 1;
+    this.offset.origin = {};
+    this.offset.x = this.offset.origin.x = ~~(width / 2);
+    this.offset.y = this.offset.origin.y = ~~(height / 2);
     this.zoom = 1;
     return this;
   };
@@ -110,6 +92,11 @@
     this.offset.x += x;
     this.offset.y += y;
     return this.render();
+  };
+
+  TileGrid.prototype.AlignToOrigin = function() {
+    this.offset.origin.x = this.offset.origin.x;
+    this.offset.origin.y = this.offset.origin.y;
   };
 
   TileGrid.prototype.changeTile = function(x, y, tilename) {
