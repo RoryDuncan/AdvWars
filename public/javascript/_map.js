@@ -1,5 +1,5 @@
 (function() {
-  var Map, Tile, TileGrid, calculateTileRenderPositions, utils;
+  var Map, Selector, Tile, TileGrid, calculateTileRenderPositions, utils;
 
   utils = require("./_utils");
 
@@ -56,10 +56,14 @@
     /* Convert the data into a normalized grid data
     */
 
-    createTiles = function(coords, i) {
+    createTiles = function(coords, i, isCenterIndex) {
       var tile, tilename;
       tilename = this.data[1] === "-all" ? this.data[0] : this.data[i];
       tile = new Tile(tilename, coords, tilesize, this.game, this);
+      if (typeof isCenterIndex === "number") {
+        tile.isCenter = true;
+        this.centerIndex = isCenterIndex;
+      }
       this.tiles.push(tile);
     };
     utils.generateNormalizedGrid(width, height, createTiles, this);
@@ -116,6 +120,7 @@
     this.tilegrid = tilegrid;
     this.game = game;
     this.backgroundColor = backgroundColor != null ? backgroundColor : "#48c";
+    this.centerIndex = this.tilegrid.centerIndex;
     this.drawBackground = function() {
       this.game.context.fillStyle = this.backgroundColor;
       return this.game.context.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
@@ -154,6 +159,19 @@
   };
 
   module.exports.Map = Map;
+
+  Selector = function(game, Map) {
+    this.game = game;
+    this.Map = Map;
+    this.position = this.grid = utils.generateNormalizedGrid(this.Map.tilegrid.width, this.Map.tilegrid.width);
+    return this;
+  };
+
+  Selector.prototype.move = function(x, y) {};
+
+  Selector.prototype.adjustMap = function(x, y) {};
+
+  Selector.prototype.render = function() {};
 
 }).call(this);
 

@@ -65,10 +65,13 @@ TileGrid = (@game, @data, @dimensions) ->
   ### Convert the data into a normalized grid data  ###
 
   # iterator Fn
-  createTiles = (coords, i) ->
+  createTiles = (coords, i, isCenterIndex) ->
     
     tilename = if @data[1] is "-all" then @data[0] else @data[i] 
     tile = new Tile(tilename, coords, tilesize, @game, @)
+    if typeof isCenterIndex is "number"
+      tile.isCenter = true
+      @centerIndex = isCenterIndex
     @tiles.push tile
     return
 
@@ -116,6 +119,8 @@ module.exports.TileGrid = TileGrid
 # Map is a wrapper object
 
 Map = (@name, @tilegrid, @game, @backgroundColor = "#48c") ->
+  
+  @centerIndex = @tilegrid.centerIndex
 
   @drawBackground = () ->
     @game.context.fillStyle = @backgroundColor
@@ -143,3 +148,16 @@ Map::right = () ->
   @move 1,0
 
 module.exports.Map = Map
+
+# the object for selecting units, tiles, etc
+Selector = (@game, @Map) ->
+  @position = 
+  @grid = utils.generateNormalizedGrid @Map.tilegrid.width, @Map.tilegrid.width
+
+  return @
+
+Selector::move = (x, y) ->
+
+Selector::adjustMap = (x, y) ->
+
+Selector::render = () ->

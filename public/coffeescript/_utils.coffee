@@ -62,7 +62,6 @@ module.exports.extend = extend = (extended, objs...) ->
 
   return extended
 
-
 module.exports.ImageLoader = class ImageLoader extends EventEmitter
 
   constructor: (items, callback, individualFileCallback) ->
@@ -126,11 +125,11 @@ module.exports.isInt = (num) ->
   return true if (num / Math.floor(num) is 1 or num / Math.floor(num) is -1)
   return false
 
-module.exports.generateNormalizedGrid = (width, height, iterator, iteratorScope) ->
+module.exports.generateNormalizedGrid = (width, height, iterator = new Function(), scope) ->
   evenOffset = module.exports.isInt(width / 2) ? 0 : 1 # even numbers wont have a perfect grid at 0,0; this fixes that
   x0 = ~~(width / 2)   # the boundery x value in the normalized grid
   y0 = ~~(height / 2)   # the first y value in the normalized grid
-  centerIndex = null    # may be useful to know where the center is, store for later
+  centerIndex = false    # may be useful to know where the center is, store for later
   x = -1 * x0           # starting x value before iteration
   y = -1 * y0           # starting y value before iteration
 
@@ -143,11 +142,14 @@ module.exports.generateNormalizedGrid = (width, height, iterator, iteratorScope)
       centerIndex = i
 
     basicGrid.push normalData
-    iterator.call (iteratorScope or null), normalData, i
+    iterator.call (scope or null), normalData, i, centerIndex
 
     if x is (x0 - evenOffset)
       x = (-1 * x0)
       y += 1
     else x++
 
+
+  basicGrid.centerIndex = centerIndex
   return basicGrid
+

@@ -190,14 +190,17 @@
     return false;
   };
 
-  module.exports.generateNormalizedGrid = function(width, height, iterator, iteratorScope) {
+  module.exports.generateNormalizedGrid = function(width, height, iterator, scope) {
     var basicGrid, centerIndex, evenOffset, i, normalData, x, x0, y, y0, _i, _ref, _ref1;
+    if (iterator == null) {
+      iterator = new Function();
+    }
     evenOffset = (_ref = module.exports.isInt(width / 2)) != null ? _ref : {
       0: 1
     };
     x0 = ~~(width / 2);
     y0 = ~~(height / 2);
-    centerIndex = null;
+    centerIndex = false;
     x = -1 * x0;
     y = -1 * y0;
     basicGrid = [];
@@ -213,7 +216,7 @@
         centerIndex = i;
       }
       basicGrid.push(normalData);
-      iterator.call(iteratorScope || null, normalData, i);
+      iterator.call(scope || null, normalData, i, centerIndex);
       if (x === (x0 - evenOffset)) {
         x = -1 * x0;
         y += 1;
@@ -221,6 +224,7 @@
         x++;
       }
     }
+    basicGrid.centerIndex = centerIndex;
     return basicGrid;
   };
 
