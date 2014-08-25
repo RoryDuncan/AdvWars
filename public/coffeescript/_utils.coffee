@@ -121,14 +121,18 @@ module.exports.isArray = Array.isArray or (thing) ->
   # defaults to built in isArray if browser supports it
   Object.prototype.toString.call thing is "[object Array]"
 
-module.exports.isInt = (num) ->
-  return true if (num / Math.floor(num) is 1 or num / Math.floor(num) is -1)
+module.exports.isInt = (n) ->
+  return true if (n / Math.floor(n) is 1 or n / Math.floor(n) is -1)
   return false
+module.exports.isEven = (n) ->
+  return if n % 2 is 0 then true else false  
+module.exports.has = (obj, key) ->
+  return Object.hasOwnProperty.call(obj, key)
 
 module.exports.generateNormalizedGrid = (width, height, iterator = new Function(), scope) ->
   evenOffset = module.exports.isInt(width / 2) ? 0 : 1 # even numbers wont have a perfect grid at 0,0; this fixes that
-  x0 = ~~(width / 2)   # the boundery x value in the normalized grid
-  y0 = ~~(height / 2)   # the first y value in the normalized grid
+  x0 = ~~(width / 2) - evenOffset   # the boundery x value in the normalized grid
+  y0 = ~~(height / 2) - evenOffset   # the first y value in the normalized grid
   centerIndex = false    # may be useful to know where the center is, store for later
   x = -1 * x0           # starting x value before iteration
   y = -1 * y0           # starting y value before iteration
@@ -136,10 +140,11 @@ module.exports.generateNormalizedGrid = (width, height, iterator = new Function(
   basicGrid = []
 
   for i in [0...(width * height)]
-    normalData = {x,y,x0,y0}
+    normalData = {x,y,x0,y0, "id":i}
     if x is 0 and y is 0
       normalData.centerIndex = true
       centerIndex = i
+    else centerIndex = false
 
     basicGrid.push normalData
     iterator.call (scope or null), normalData, i, centerIndex
@@ -151,5 +156,6 @@ module.exports.generateNormalizedGrid = (width, height, iterator = new Function(
 
 
   basicGrid.centerIndex = centerIndex
+
   return basicGrid
 

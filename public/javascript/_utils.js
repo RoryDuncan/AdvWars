@@ -183,11 +183,23 @@
     return Object.prototype.toString.call(thing === "[object Array]");
   };
 
-  module.exports.isInt = function(num) {
-    if (num / Math.floor(num) === 1 || num / Math.floor(num) === -1) {
+  module.exports.isInt = function(n) {
+    if (n / Math.floor(n) === 1 || n / Math.floor(n) === -1) {
       return true;
     }
     return false;
+  };
+
+  module.exports.isEven = function(n) {
+    if (n % 2 === 0) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  module.exports.has = function(obj, key) {
+    return Object.hasOwnProperty.call(obj, key);
   };
 
   module.exports.generateNormalizedGrid = function(width, height, iterator, scope) {
@@ -198,8 +210,8 @@
     evenOffset = (_ref = module.exports.isInt(width / 2)) != null ? _ref : {
       0: 1
     };
-    x0 = ~~(width / 2);
-    y0 = ~~(height / 2);
+    x0 = ~~(width / 2) - evenOffset;
+    y0 = ~~(height / 2) - evenOffset;
     centerIndex = false;
     x = -1 * x0;
     y = -1 * y0;
@@ -209,11 +221,14 @@
         x: x,
         y: y,
         x0: x0,
-        y0: y0
+        y0: y0,
+        "id": i
       };
       if (x === 0 && y === 0) {
         normalData.centerIndex = true;
         centerIndex = i;
+      } else {
+        centerIndex = false;
       }
       basicGrid.push(normalData);
       iterator.call(scope || null, normalData, i, centerIndex);

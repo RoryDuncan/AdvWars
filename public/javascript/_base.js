@@ -56,14 +56,9 @@
     console.log("Starting...");
     this.clock.start();
     that = this;
-    mapPanning = {
-      "keydown up": that.currentMap.map.up.bind(that.currentMap.map),
-      "keydown down": that.currentMap.map.down.bind(that.currentMap.map),
-      "keydown left": that.currentMap.map.left.bind(that.currentMap.map),
-      "keydown right": that.currentMap.map.right.bind(that.currentMap.map)
-    };
+    this.currentMap.map.play.call(this.currentMap.map);
+    mapPanning = this.currentMap.map.panningBindings.call(this.currentMap.map);
     mapPanProfile = new input.InputProfile("map-panning", this.inputHandler, mapPanning);
-    this.inputHandler.profiles["map-panning"] = mapPanProfile;
     return mapPanProfile.enable();
   };
 

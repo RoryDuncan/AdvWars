@@ -192,6 +192,8 @@
     this._state = "off";
     this._combined = [];
     this.combinedWith = [];
+    this.inputHandler.profiles = this.inputHandler.profiles || {};
+    this.inputHandler.profiles[this.name] = this;
     return this;
   };
 

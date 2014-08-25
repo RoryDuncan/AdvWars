@@ -185,10 +185,12 @@ module.exports.InputHandler = (el) ->
 keep track of certain keybinding configurations
 ###
 
-InputProfile = (@name, @inputHandler, @actions, @scope) ->
+InputProfile = (@name, @inputHandler, @actions, @scope) -> 
   @_state = "off"
   @_combined = []
   @combinedWith = []
+  @inputHandler.profiles = @inputHandler.profiles or {}
+  @inputHandler.profiles[@name] = @
   return @
 
 InputProfile::multipleInputActions = (inputMethod) ->

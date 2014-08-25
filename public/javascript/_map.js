@@ -1,18 +1,33 @@
 (function() {
-  var Map, Selector, Tile, TileGrid, calculateTileRenderPositions, utils;
+  var Map, Selector, Tile, TileGrid, calculatePixelPosition, input, pixels, utils;
 
   utils = require("./_utils");
 
-  calculateTileRenderPositions = function() {
-    var size, xo, xp, xw, yo, yp, yw, zoom;
-    size = this.size;
-    zoom = this.grid.zoom;
-    xo = this.grid.offset.x * size;
-    yo = this.grid.offset.y * size;
-    xp = (this.position.x * size) * zoom;
-    yp = (this.position.y * size) * zoom;
+  input = require("./_input");
+
+  calculatePixelPosition = pixels = function(size, position, offset, zoom) {
+    var endx, endy, x, xo, xp, xw, y, yo, yp, yw;
+    xo = offset.x * size;
+    yo = offset.y * size;
+    xp = position.x * size;
+    yp = position.y * size;
     xw = (xo + size + xp) * zoom;
-    return yw = (xo + size + xp) * zoom;
+    yw = (yo + size + yp) * zoom;
+    x = xp + xo;
+    y = yp + yo;
+    endx = xw;
+    endy = yw;
+    return {
+      x: x,
+      y: y,
+      endx: endx,
+      endy: endy,
+      size: size,
+      "offset": {
+        "x": xo,
+        "y": yo
+      }
+    };
   };
 
   Tile = function(name, position, size, game, grid) {
@@ -34,11 +49,18 @@
     zoom = this.grid.zoom;
     xo = this.grid.offset.x * size;
     yo = this.grid.offset.y * size;
-    xp = (this.position.x * size) * zoom;
-    yp = (this.position.y * size) * zoom;
+    xp = this.position.x * size;
+    yp = this.position.y * size;
     xw = (xo + size + xp) * zoom;
-    yw = (xo + size + xp) * zoom;
-    return sprite.render.call(sprite, xp + xo, yp + yo, size, size, zoom);
+    yw = (yo + size + yp) * zoom;
+    sprite.render.call(sprite, xp + xo, yp + yo, size, size, zoom);
+    this.game.context.font = "" + (size / 4) + "px Consolas";
+    this.game.context.fillStyle = "#fff";
+    return this.game.context.fillText("" + this.position.x + "," + this.position.y, xp + xo + (size / 4), yp + yo + (size / 2));
+  };
+
+  Tile.prototype.toString = function() {
+    return "[object Tile]";
   };
 
   module.exports.Tile = Tile;
@@ -132,6 +154,15 @@
     return this.tilegrid.render.call(this.tilegrid);
   };
 
+  Map.prototype.panningBindings = function() {
+    return {
+      "keydown numpad8": this.up.bind(this),
+      "keydown numpad2": this.down.bind(this),
+      "keydown numpad4": this.left.bind(this),
+      "keydown numpad6": this.right.bind(this)
+    };
+  };
+
   Map.prototype.move = function(x, y) {
     if (x == null) {
       x = 1;
@@ -158,20 +189,158 @@
     return this.move(1, 0);
   };
 
+  Map.prototype.play = function() {
+    var selector, selectorPanProfile;
+    console.log("Playing " + this.name + "!");
+    selector = new Selector(this.game, this, "select");
+    selectorPanProfile = new input.InputProfile("selector-panning", this.game.inputHandler, selector.movementActionBindings());
+    selectorPanProfile.enable();
+    return this.game.Layers.add.call(this.game, {
+      name: "selector",
+      layer: 6,
+      fn: selector.render,
+      scope: selector
+    });
+  };
+
+  Map.prototype.edit = function() {
+    return console.log("Editing " + this.name + "!");
+  };
+
   module.exports.Map = Map;
 
-  Selector = function(game, Map) {
+  Selector = function(game, map, type) {
+    var src;
     this.game = game;
-    this.Map = Map;
-    this.position = this.grid = utils.generateNormalizedGrid(this.Map.tilegrid.width, this.Map.tilegrid.width);
+    this.map = map;
+    this.type = type != null ? type : "select";
+    console.log(this);
+    this.Sprites = this.game.Sprites;
+    this.centerIndex = this.map.centerIndex;
+    this.grid = utils.generateNormalizedGrid(this.map.tilegrid.dimensions.width, this.map.tilegrid.dimensions.height);
+    src = this.grid[this.centerIndex];
+    this.position = {
+      x: src.x,
+      y: src.y,
+      x0: src.x0,
+      y0: src.y0
+    };
+    this.map.selector = this;
     return this;
   };
 
-  Selector.prototype.move = function(x, y) {};
+  Selector.prototype.getIndexOf = function(position) {
+    var index, p;
+    if (position == null) {
+      position = {
+        x: 0,
+        y: 0
+      };
+    }
+    p = position;
+    index = null;
+    this.grid.forEach(function(el, i) {
+      if (el.x === p.x && el.y === p.y) {
+        return index = i;
+      }
+    });
+    return index;
+  };
 
-  Selector.prototype.adjustMap = function(x, y) {};
+  Selector.prototype.getIndex = function() {
+    return this.getIndexOf(this.position);
+  };
 
-  Selector.prototype.render = function() {};
+  Selector.prototype.getTile = function() {
+    return this.grid[this.getIndex()];
+  };
+
+  Selector.prototype.getUnit = function() {};
+
+  Selector.prototype.isOutOfBounds = function() {
+    var amount, dimensions, isOutOfBounds, outOfBounds, tg;
+    console.log(this.getTile());
+    outOfBounds = false;
+    tg = this.map.tilegrid;
+    dimensions = pixels(tg.dimensions.tilesize, this.position, tg.offset, tg.zoom);
+    amount = 2;
+    if (dimensions.x < 0) {
+      this.map.move.call(this.map, amount, 0);
+      isOutOfBounds = true;
+    } else if (dimensions.endx > window.innerWidth) {
+      this.map.move.call(this.map, -amount, 0);
+      isOutOfBounds = true;
+    }
+    if (dimensions.y < 0) {
+      this.map.move.call(this.map, 0, amount);
+      isOutOfBounds = true;
+    } else if (dimensions.endy > window.innerHeight) {
+      this.map.move.call(this.map, 0, -amount);
+      isOutOfBounds = true;
+    }
+    return isOutOfBounds;
+  };
+
+  Selector.prototype.move = function(x, y) {
+    this.position.x += x;
+    this.position.y += y;
+  };
+
+  Selector.prototype.movementActionBindings = function() {
+    return {
+      "keydown up": this.moveUp.bind(this),
+      "keydown down": this.moveDown.bind(this),
+      "keydown left": this.moveLeft.bind(this),
+      "keydown right": this.moveRight.bind(this)
+    };
+  };
+
+  Selector.prototype.moveUp = function() {
+    var max, min, p;
+    p = this.position;
+    min = -1 * p.y0;
+    max = p.y0;
+    p.y = Math.max(min, Math.min(max, p.y - 1));
+    return this.isOutOfBounds();
+  };
+
+  Selector.prototype.moveDown = function() {
+    var max, min, p;
+    p = this.position;
+    min = -1 * p.y0;
+    max = utils.isEven(p.y0) ? p.y0 : p.y0 - 1;
+    p.y = Math.max(min, Math.min(max, p.y + 1));
+    return this.isOutOfBounds();
+  };
+
+  Selector.prototype.moveLeft = function() {
+    var max, min, p;
+    p = this.position;
+    min = -1 * p.x0;
+    max = p.x0;
+    p.x = Math.max(min, Math.min(max, p.x - 1));
+    return this.isOutOfBounds();
+  };
+
+  Selector.prototype.moveRight = function() {
+    var max, min, p;
+    p = this.position;
+    min = -1 * p.x0;
+    max = utils.isEven(p.x0) ? p.x0 : p.x0;
+    p.x = Math.max(min, Math.min(max, p.x + 1));
+    return this.isOutOfBounds();
+  };
+
+  Selector.prototype.render = function() {
+    var ctx, dimensions, tg;
+    tg = this.map.tilegrid;
+    dimensions = pixels(tg.dimensions.tilesize, this.position, tg.offset, tg.zoom);
+    ctx = this.game.context;
+    ctx.strokeStyle = this.color || "#eee";
+    return ctx.strokeRect(dimensions.x - 1, dimensions.y - 1, dimensions.size + 1, dimensions.size + 1);
+  };
+
+  module.exports.Selector = Selector;
 
 }).call(this);
 

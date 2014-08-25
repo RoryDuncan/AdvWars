@@ -54,15 +54,11 @@ Game::start = (mode) ->
   # if mode is "game" / "mapeditor" etc
   that = @
 
+  @currentMap.map.play.call(@currentMap.map)
   #introduce the map panning profile
-  mapPanning = 
-    "keydown up": (that.currentMap.map.up).bind(that.currentMap.map)
-    "keydown down": (that.currentMap.map.down).bind(that.currentMap.map)
-    "keydown left": (that.currentMap.map.left).bind(that.currentMap.map)
-    "keydown right": (that.currentMap.map.right).bind(that.currentMap.map)
 
+  mapPanning = @currentMap.map.panningBindings.call(@currentMap.map)
   mapPanProfile = new input.InputProfile("map-panning", @inputHandler, mapPanning)
-  @inputHandler.profiles["map-panning"] = mapPanProfile
   mapPanProfile.enable()
 
 
