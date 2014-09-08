@@ -129,33 +129,88 @@ module.exports.isEven = (n) ->
 module.exports.has = (obj, key) ->
   return Object.hasOwnProperty.call(obj, key)
 
+UIDgroups = {};
+module.exports.generateUID =
+module.exports.UID =
+UID = (groupName, prependLetter = false) ->
+  
+  # test directly against undefined because -1 and 0 fire falsy values
+  previous = if UIDgroups[groupName] is undefined then 0 else UIDgroups[groupName]
+
+  UIDgroups[groupName] = previous
+  UIDgroups[groupName]++
+  
+  id = UIDgroups[groupName]
+
+  letter = groupName[0] + "_"
+
+  if prependLetter
+    return "#{letter}#{id}"
+
+  else return "#{id}"
+
+
+module.exports.limitToRange = (value, min, max) ->
+  return Math.max(min, Math.min(max, value))
+
+
 module.exports.generateNormalizedGrid = (width, height, iterator = new Function(), scope) ->
-  evenOffset = module.exports.isInt(width / 2) ? 0 : 1 # even numbers wont have a perfect grid at 0,0; this fixes that
-  x0 = ~~(width / 2) - evenOffset   # the boundery x value in the normalized grid
-  y0 = ~~(height / 2) - evenOffset   # the first y value in the normalized grid
-  centerIndex = false    # may be useful to know where the center is, store for later
+  # even numbers wont have a perfect grid at 0,0; this fixes that
+  evenOffsetX = module.exports.isInt(width / 2) ? 0 : 1
+  evenOffsetY = module.exports.isInt(height / 2) ? 0 : 1
+  # the boundery x value in the normalized grid
+  x0 = ~~(width / 2) - evenOffsetX
+
+  # the first y value in the normalized grid
+  y0 = ~~(height / 2) - evenOffsetY
+  xEnd = x0 + evenOffsetX
+  yEnd = y0 + evenOffsetY
+  centerIndex = false   # may be useful to know where the center is, store for later
   x = -1 * x0           # starting x value before iteration
   y = -1 * y0           # starting y value before iteration
 
   basicGrid = []
 
   for i in [0...(width * height)]
-    normalData = {x,y,x0,y0, "id":i}
+    normalData = {x,y,x0,y0, start:{"x":-x0, "y":-y0}, end:{"x":xEnd, "y":yEnd}, "id":i}
     if x is 0 and y is 0
       normalData.centerIndex = true
       centerIndex = i
+
     else centerIndex = false
 
     basicGrid.push normalData
     iterator.call (scope or null), normalData, i, centerIndex
 
-    if x is (x0 - evenOffset)
-      x = (-1 * x0)
+    # the checks 
+    if x is xEnd
+      x = (-1 * x0) #reset to our farmost left value
       y += 1
     else x++
 
-
   basicGrid.centerIndex = centerIndex
+  console.assert (width * height) is basicGrid.length, "Something went wrong with generation of a Normalized Grid"
 
   return basicGrid
 
+
+module.exports.calculatePixelPosition = (size, position, offset, zoom) ->
+  #offsets
+  xo = ( offset.x * size )
+  yo = ( offset.y * size )
+
+  #positions
+  xp = ( position.x * size )
+  yp = ( position.y * size )
+
+  # widths:
+  # (with fillRect / strokeRect it is the x and y coordinates on the canvas)
+  xw = (xo + size + xp) * zoom
+  yw = (yo + size + yp) * zoom
+
+  x = xp + xo
+  y = yp + yo
+  endx = xw
+  endy = yw
+
+  return {x, y, endx, endy, size, "offset": {"x":xo, "y":yo}}

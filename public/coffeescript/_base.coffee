@@ -1,14 +1,28 @@
 
 console.log "%cAdvanced Wars Clone", "color: #c88"
 
-require             "./_rafPolyfill"
-utils = require     "./_utils"
-EventEmitter =      utils.EventEmitter
-Sprite = require    "./_sprites"
-mapUtils = require  "./_map"
-input = require    "./_input"
-Clock = require     "./_clock"
-$ = require         "jquery"
+require                 "./_rafPolyfill"
+utils = require         "./_utils"
+extend =                utils.extend   
+Units = require         "./_units"
+Unit =                  Units.Unit
+UnitManager =           Units.UnitManager
+EventEmitter =          utils.EventEmitter
+Sprite = require        "./_sprites"
+mapUtils = require      "./_map"
+input = require         "./_input"
+Clock = require         "./_clock"
+$ = require             "jquery"
+
+###
+
+  RENDER LAYERS
+
+  0 backdrop
+  3 map render
+
+
+###
 
 Game = (@canvas, @width, @height) ->
   
@@ -29,6 +43,13 @@ Game = (@canvas, @width, @height) ->
   @inputHandler = new input.InputHandler( document )
   @inputHandler.profiles = {}
   @clock = new Clock()
+  @UnitManager = UM = new UnitManager(@)
+
+  @Layers.add 
+    name: "unit render",
+    layer: 5,
+    fn: UM.render,
+    scope: UM
 
   # internal render loop
   render = () ->
@@ -37,8 +58,6 @@ Game = (@canvas, @width, @height) ->
     #and calls them in order (0,1,2,etc)
     @Layers.renderAll.call(@Layers)
     
-
-
   @__loop = @clock.loop "render", render, [], @
   @__loop.for({interval:17})
 
@@ -46,7 +65,8 @@ Game = (@canvas, @width, @height) ->
 
 
 # extend EventEmitter
-Game:: = EventEmitter::
+extend Game::, EventEmitter::
+
 
 Game::start = (mode) ->
   console.log "Starting..."
@@ -61,6 +81,11 @@ Game::start = (mode) ->
   mapPanProfile = new input.InputProfile("map-panning", @inputHandler, mapPanning)
   mapPanProfile.enable()
 
+  console.log "%c'Unit' Testing", "text-decoration: underline"
+  console.log @UnitManager
+  testUnit = new Unit(@, "soldier")
+  testUnit.show()
+  console.log testUnit
 
 Game::pause = () ->
   @clock.pause()
@@ -125,11 +150,16 @@ Game::_createSpriteList = (spritelist, callback) ->
 
     key = name + (i or "")
     s = @Sprites.spritesheet
-
-    list[key] = new Sprite s, {x:o.x, y:o.y, w:o.w, h:o.h}
+    style = "font-weight: 600;"
+    console.groupCollapsed "%c#{key}", style
+    list[key] = new Sprite s, {x:o.x, y:o.y, w:o.w, h:o.h}, context
     list[key].name = key
-    list[key].render({x:100, y: 100})
+    console.log list[key]
+    console.log "Testing Sprite Render"
+    # run a quick test. if the sprite doesn't render it needs help
+    list[key].render {x:1, y: 1}
     console.log "Adding Sprite for '#{key}'"
+    console.groupEnd "%c#{key}", style
 
   console.groupCollapsed "%cCreating Sprites From JSON data", "color: #0b7"
 

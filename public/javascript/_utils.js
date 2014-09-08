@@ -1,5 +1,5 @@
 (function() {
-  var EventEmitter, ImageLoader, extend,
+  var EventEmitter, ImageLoader, UID, UIDgroups, extend,
     __slice = [].slice,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -202,26 +202,62 @@
     return Object.hasOwnProperty.call(obj, key);
   };
 
+  UIDgroups = {};
+
+  module.exports.generateUID = module.exports.UID = UID = function(groupName, prependLetter) {
+    var id, letter, previous;
+    if (prependLetter == null) {
+      prependLetter = false;
+    }
+    previous = UIDgroups[groupName] === void 0 ? 0 : UIDgroups[groupName];
+    UIDgroups[groupName] = previous;
+    UIDgroups[groupName]++;
+    id = UIDgroups[groupName];
+    letter = groupName[0] + "_";
+    if (prependLetter) {
+      return "" + letter + id;
+    } else {
+      return "" + id;
+    }
+  };
+
+  module.exports.limitToRange = function(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  };
+
   module.exports.generateNormalizedGrid = function(width, height, iterator, scope) {
-    var basicGrid, centerIndex, evenOffset, i, normalData, x, x0, y, y0, _i, _ref, _ref1;
+    var basicGrid, centerIndex, evenOffsetX, evenOffsetY, i, normalData, x, x0, xEnd, y, y0, yEnd, _i, _ref, _ref1, _ref2;
     if (iterator == null) {
       iterator = new Function();
     }
-    evenOffset = (_ref = module.exports.isInt(width / 2)) != null ? _ref : {
+    evenOffsetX = (_ref = module.exports.isInt(width / 2)) != null ? _ref : {
       0: 1
     };
-    x0 = ~~(width / 2) - evenOffset;
-    y0 = ~~(height / 2) - evenOffset;
+    evenOffsetY = (_ref1 = module.exports.isInt(height / 2)) != null ? _ref1 : {
+      0: 1
+    };
+    x0 = ~~(width / 2) - evenOffsetX;
+    y0 = ~~(height / 2) - evenOffsetY;
+    xEnd = x0 + evenOffsetX;
+    yEnd = y0 + evenOffsetY;
     centerIndex = false;
     x = -1 * x0;
     y = -1 * y0;
     basicGrid = [];
-    for (i = _i = 0, _ref1 = width * height; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+    for (i = _i = 0, _ref2 = width * height; 0 <= _ref2 ? _i < _ref2 : _i > _ref2; i = 0 <= _ref2 ? ++_i : --_i) {
       normalData = {
         x: x,
         y: y,
         x0: x0,
         y0: y0,
+        start: {
+          "x": -x0,
+          "y": -y0
+        },
+        end: {
+          "x": xEnd,
+          "y": yEnd
+        },
         "id": i
       };
       if (x === 0 && y === 0) {
@@ -232,7 +268,7 @@
       }
       basicGrid.push(normalData);
       iterator.call(scope || null, normalData, i, centerIndex);
-      if (x === (x0 - evenOffset)) {
+      if (x === xEnd) {
         x = -1 * x0;
         y += 1;
       } else {
@@ -240,7 +276,33 @@
       }
     }
     basicGrid.centerIndex = centerIndex;
+    console.assert((width * height) === basicGrid.length, "Something went wrong with generation of a Normalized Grid");
     return basicGrid;
+  };
+
+  module.exports.calculatePixelPosition = function(size, position, offset, zoom) {
+    var endx, endy, x, xo, xp, xw, y, yo, yp, yw;
+    xo = offset.x * size;
+    yo = offset.y * size;
+    xp = position.x * size;
+    yp = position.y * size;
+    xw = (xo + size + xp) * zoom;
+    yw = (yo + size + yp) * zoom;
+    x = xp + xo;
+    y = yp + yo;
+    endx = xw;
+    endy = yw;
+    return {
+      x: x,
+      y: y,
+      endx: endx,
+      endy: endy,
+      size: size,
+      "offset": {
+        "x": xo,
+        "y": yo
+      }
+    };
   };
 
 }).call(this);

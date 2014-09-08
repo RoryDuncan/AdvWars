@@ -16,6 +16,7 @@
       "y": 0,
       "w": 100,
       "h": 100,
+      "frames": 0,
       "land": true,
       "movement": 0
     },
@@ -55,7 +56,15 @@
       {}
     ],
     "sea": [
-      {},
+      {
+        "x": 100,
+        "y": 0,
+        "w": 100,
+        "h": 100,
+        "frames": 0,
+        "land": false,
+        "movement": 0
+      },
       {},
       {}
     ],
@@ -80,5 +89,14 @@
     ]
   },
   "buildings": {},
-  "units": {}
+  "units": {
+    "soldier": {
+      "x": 0,
+      "y": 100,
+      "w": 100,
+      "h": 100,
+      "frames": 0,
+      "movement": 0
+    }
+  }
 }

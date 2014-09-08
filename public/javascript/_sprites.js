@@ -1,5 +1,5 @@
 (function() {
-  var Sprite;
+  var NativeSprite, Sprite;
 
   Sprite = function(spritesheet, options, game) {
     this.spritesheet = spritesheet;
@@ -20,16 +20,65 @@
       w: options.w,
       h: options.h
     };
-    this.render = function(dx, dy, dw, dh, zoom) {
-      if (zoom == null) {
-        zoom = 1;
-      }
-      if (!this.game) {
-        return;
-      }
-      return this.game.context.drawImage(this.spritesheet, this.position.x, this.position.y, this.dim.w, this.dim.h, dx, dy, dw * zoom, dh * zoom);
-    };
+    this.effects = {};
     return this;
+  };
+
+  Sprite.prototype.render = function(dx, dy, dw, dh, zoom) {
+    if (zoom == null) {
+      zoom = 1;
+    }
+    console.assert(this.game !== void 0, "Sprite::render called in wrong context.", this);
+    if (!this.game) {
+      return;
+    }
+    this.game.context.drawImage(this.spritesheet, this.position.x, this.position.y, this.dim.w, this.dim.h, dx, dy, dw * zoom, dh * zoom);
+    return this.renderEffects();
+  };
+
+  Sprite.prototype.addEffect = function(name, fn) {
+    this.effects = this.effects || [];
+    return this.effects.push = {
+      name: name,
+      fn: fn
+    };
+  };
+
+  Sprite.prototype.renderEffects = function() {
+    if (this.effects.length === 0) {
+
+    }
+  };
+
+  NativeSprite = function(options, game) {
+    if (options == null) {
+      options = {
+        x: 0,
+        y: 0,
+        w: 50,
+        h: 50
+      };
+    }
+    this.game = game;
+    this.position = this.pos = {
+      x: options.x,
+      y: options.y
+    };
+    return this.dimensions = this.dim = {
+      w: options.w,
+      h: options.h
+    };
+  };
+
+  NativeSprite.prototype.render = function() {
+    var ctx;
+    console.assert(this.game !== void 0, "Sprite::render called in wrong context.", this);
+    if (!this.game) {
+      return;
+    }
+    ctx = this.game.context;
+    ctx.fillStyle = "#4f9";
+    return ctx.fillRect(0, 0, this.dim.w, this.dim.h);
   };
 
   module.exports = Sprite;

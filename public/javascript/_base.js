@@ -1,11 +1,19 @@
 (function() {
-  var $, Clock, EventEmitter, Game, Sprite, canvas, finishedLoadingImages, game, input, loader, mapUtils, utils;
+  var $, Clock, EventEmitter, Game, Sprite, Unit, UnitManager, Units, canvas, extend, finishedLoadingImages, game, input, loader, mapUtils, utils;
 
   console.log("%cAdvanced Wars Clone", "color: #c88");
 
   require("./_rafPolyfill");
 
   utils = require("./_utils");
+
+  extend = utils.extend;
+
+  Units = require("./_units");
+
+  Unit = Units.Unit;
+
+  UnitManager = Units.UnitManager;
 
   EventEmitter = utils.EventEmitter;
 
@@ -19,8 +27,17 @@
 
   $ = require("jquery");
 
+  /*
+  
+    RENDER LAYERS
+  
+    0 backdrop
+    3 map render
+  */
+
+
   Game = function(canvas, width, height) {
-    var gameloop, render;
+    var UM, gameloop, render;
     this.canvas = canvas;
     this.width = width;
     this.height = height;
@@ -39,6 +56,13 @@
     this.inputHandler = new input.InputHandler(document);
     this.inputHandler.profiles = {};
     this.clock = new Clock();
+    this.UnitManager = UM = new UnitManager(this);
+    this.Layers.add({
+      name: "unit render",
+      layer: 5,
+      fn: UM.render,
+      scope: UM
+    });
     render = function() {
       return this.Layers.renderAll.call(this.Layers);
     };
@@ -49,17 +73,22 @@
     return this;
   };
 
-  Game.prototype = EventEmitter.prototype;
+  extend(Game.prototype, EventEmitter.prototype);
 
   Game.prototype.start = function(mode) {
-    var mapPanProfile, mapPanning, that;
+    var mapPanProfile, mapPanning, testUnit, that;
     console.log("Starting...");
     this.clock.start();
     that = this;
     this.currentMap.map.play.call(this.currentMap.map);
     mapPanning = this.currentMap.map.panningBindings.call(this.currentMap.map);
     mapPanProfile = new input.InputProfile("map-panning", this.inputHandler, mapPanning);
-    return mapPanProfile.enable();
+    mapPanProfile.enable();
+    console.log("%c'Unit' Testing", "text-decoration: underline");
+    console.log(this.UnitManager);
+    testUnit = new Unit(this, "soldier");
+    testUnit.show();
+    return console.log(testUnit);
   };
 
   Game.prototype.pause = function() {
@@ -128,24 +157,29 @@
     list = this.Sprites;
     context = this;
     computeSprite = function(o, name, i) {
-      var key, s;
+      var key, s, style;
       if (o.x === void 0) {
         return;
       }
       key = name + (i || "");
       s = this.Sprites.spritesheet;
+      style = "font-weight: 600;";
+      console.groupCollapsed("%c" + key, style);
       list[key] = new Sprite(s, {
         x: o.x,
         y: o.y,
         w: o.w,
         h: o.h
-      });
+      }, context);
       list[key].name = key;
+      console.log(list[key]);
+      console.log("Testing Sprite Render");
       list[key].render({
-        x: 100,
-        y: 100
+        x: 1,
+        y: 1
       });
-      return console.log("Adding Sprite for '" + key + "'");
+      console.log("Adding Sprite for '" + key + "'");
+      return console.groupEnd("%c" + key, style);
     };
     console.groupCollapsed("%cCreating Sprites From JSON data", "color: #0b7");
     for (key in spritelist) {

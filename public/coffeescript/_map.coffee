@@ -1,32 +1,13 @@
 
 
 utils = require "./_utils"
+extend = utils.extend
+pixels = utils.calculatePixelPosition
 input = require "./_input"
 
 
-calculatePixelPosition = pixels = (size, position, offset, zoom) ->
-  
 
-  #offsets
-  xo = ( offset.x * size )
-  yo = ( offset.y * size )
-
-  #positions
-  xp = ( position.x * size )
-  yp = ( position.y * size )
-
-  # widths (with fillRect / strokeRect it is the x and y coordinates on the canvas)
-  xw = (xo + size + xp) * zoom
-  yw = (yo + size + yp) * zoom
-
-  x = xp + xo
-  y = yp + yo
-  endx = xw
-  endy = yw
-
-  return {x, y, endx, endy, size, "offset": {"x":xo, "y":yo}}
-
-Tile  = (@name, @position, @size, @game, @grid) ->
+Tile  = (@game, @name, @position, @size, @grid) ->
 
   @Sprites = @game.Sprites
   @name = @name or "plain"
@@ -36,7 +17,7 @@ Tile  = (@name, @position, @size, @game, @grid) ->
 Tile::render = () ->
 
   sprite = @Sprites[@name]
-  sprite.game = @game
+  return unless sprite
 
   size = @size # width and height of the tile
   zoom = @grid.zoom # zoom modifier
@@ -53,8 +34,11 @@ Tile::render = () ->
   xw = (xo + size + xp) * zoom
   yw = (yo + size + yp) * zoom
   sprite.render.call(sprite, (xp + xo), (yp + yo), size, size, zoom)
-  @game.context.font = "#{size/4}px Consolas";
-  @game.context.fillStyle = "#fff"
+  #@showPosition(xp, xo, yp, yo, size, zoom)
+
+Tile::showPosition = (xp, xo, yp, yo, size, zoom) ->
+  @game.context.font = "#{size/4}px Helvetica";
+  @game.context.fillStyle = "#444"
   @game.context.fillText("#{@position.x},#{@position.y}", xp + xo + (size/4), yp + yo + (size/2))
 
 Tile::toString = () ->
@@ -74,11 +58,11 @@ TileGrid = (@game, @data, @dimensions) ->
 
   ### Convert the data into a normalized grid data  ###
 
-  # iterator Fn
+  # iterator Function for utils.generateNormalizedGrid
   createTiles = (coords, i, isCenterIndex) ->
     
     tilename = if @data[1] is "-all" then @data[0] else @data[i] 
-    tile = new Tile(tilename, coords, tilesize, @game, @)
+    tile = new Tile( @game, tilename, coords, tilesize, @)
     if typeof isCenterIndex is "number"
       tile.isCenter = true
       @centerIndex = isCenterIndex
@@ -90,8 +74,8 @@ TileGrid = (@game, @data, @dimensions) ->
 
   @offset = {}
   @offset.origin = {}
-  @offset.x = @offset.origin.x = ~~(width / 2) 
-  @offset.y = @offset.origin.y = ~~(height / 2) 
+  @offset.x = @offset.origin.x = ~~(width) 
+  @offset.y = @offset.origin.y = ~~(height) 
   @zoom = 1
 
   return @
@@ -128,7 +112,7 @@ module.exports.TileGrid = TileGrid
 
 # Map is a wrapper object
 
-Map = (@name, @tilegrid, @game, @backgroundColor = "#48c") ->
+Map = (@name, @tilegrid, @game, @backgroundColor = "#476ca1") ->
   
   @centerIndex = @tilegrid.centerIndex
 
@@ -177,6 +161,7 @@ Map::play = () ->
 
 Map::edit = () ->
   console.log "Editing #{@name}!"
+  # todo
   #@selector = new Selector(@game)
 
 module.exports.Map = Map
@@ -186,21 +171,20 @@ module.exports.Map = Map
 
 Selector = (@game, @map, @type = "select") ->
 
-  console.log @
   @Sprites = @game.Sprites
   @centerIndex = @map.centerIndex
   # has it's own array to keep track of positioning
   @grid = utils.generateNormalizedGrid @map.tilegrid.dimensions.width, @map.tilegrid.dimensions.height
   
   src = @grid[ @centerIndex ]
-  @position = {x: src.x, y:src.y, x0: src.x0, y0:src.y0}
+  @position = extend {}, src # {x: src.x, y:src.y, x0: src.x0, y0:src.y0}
 
   @map.selector = @
 
   return @
 
 
-Selector::getIndexOf = (position = {x:0, y:0}) ->
+Selector::getIndexOf = (position = {x:0, y:0, id:0}) ->
 
   p = position
   index = null
@@ -213,7 +197,7 @@ Selector::getIndexOf = (position = {x:0, y:0}) ->
   return index
 
 Selector::getIndex = () ->
-  return @getIndexOf(@position)
+  return @position.id or 0
 
 Selector::getTile = () ->
   return @grid[ @getIndex() ] 
@@ -221,26 +205,37 @@ Selector::getTile = () ->
 Selector::getUnit = () ->
   # todo, after units are implemented
 
-Selector::isOutOfBounds = () ->
+
+Selector::isOutOfBounds = (move = true) ->
   
-  console.log ( @getTile() ) #, @getTile()
+  # move and non-move version can probably be seperated
   outOfBounds = false
   tg = @map.tilegrid
   dimensions = pixels( tg.dimensions.tilesize, @position, tg.offset, tg.zoom )
   amount = 2
-  if dimensions.x < 0
-    @map.move.call(@map, amount, 0)
-    isOutOfBounds = true
-  else if dimensions.endx > window.innerWidth
-    @map.move.call(@map, -amount, 0)
-    isOutOfBounds = true
-  if dimensions.y < 0
-    @map.move.call(@map, 0, amount)
-    isOutOfBounds = true
-  else if dimensions.endy > window.innerHeight
-    @map.move.call(@map, 0, -amount)
-    isOutOfBounds = true
-
+  if move 
+    if dimensions.x < 0
+      @map.move.call(@map, amount, 0)
+      isOutOfBounds = true
+    else if dimensions.endx > window.innerWidth
+      @map.move.call(@map, -amount, 0)
+      isOutOfBounds = true
+    if dimensions.y < 0
+      @map.move.call(@map, 0, amount)
+      isOutOfBounds = true
+    else if dimensions.endy > window.innerHeight
+      @map.move.call(@map, 0, -amount)
+      isOutOfBounds = true
+  else
+    if dimensions.x < 0
+      return true
+    else if dimensions.endx > window.innerWidth
+      return true
+    if dimensions.y < 0
+      return true
+    else if dimensions.endy > window.innerHeight
+      return true
+    
   return isOutOfBounds
 
 Selector::move = (x, y) ->
@@ -255,33 +250,26 @@ Selector::movementActionBindings = () ->
     "keydown left": @moveLeft.bind(@),
     "keydown right": @moveRight.bind(@)
   }
-
+Selector::move = (x, y) ->
+  console.log "wow"
 Selector::moveUp = () ->
   p = @position
-  min = -1*p.y0
-  max = p.y0
-  p.y = Math.max(min, Math.min(max, p.y - 1))
+  p.y = utils.limitToRange( (p.y-1), p.start.y, p.end.y )
   @isOutOfBounds()
 
 Selector::moveDown = () ->
   p = @position
-  min = -1*p.y0
-  max = if utils.isEven p.y0 then p.y0 else p.y0 - 1
-  p.y = Math.max(min, Math.min(max, p.y + 1))
+  p.y = utils.limitToRange( (p.y+1), p.start.y, p.end.y )
   @isOutOfBounds()
 
 Selector::moveLeft = () ->
   p = @position
-  min = -1*p.x0
-  max = p.x0
-  p.x = Math.max(min, Math.min(max, p.x - 1))
+  p.x = utils.limitToRange( (p.x-1), p.start.x, p.end.x )
   @isOutOfBounds()
 
 Selector::moveRight = () ->
   p = @position
-  min = -1*p.x0
-  max = if utils.isEven p.x0 then p.x0 else p.x0
-  p.x = Math.max(min, Math.min(max, p.x + 1))
+  p.x = utils.limitToRange( (p.x+1), p.start.x, p.end.x )
   @isOutOfBounds()
 
 Selector::render = () ->
