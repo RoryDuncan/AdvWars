@@ -1,5 +1,5 @@
 (function() {
-  var Map, Selector, Tile, TileGrid, extend, input, pixels, utils;
+  var Map, Selector, Tile, TileGrid, currentRadian, extend, input, lines, pixels, utils;
 
   utils = require("./_utils");
 
@@ -127,15 +127,52 @@
     this.game = game;
     this.backgroundColor = backgroundColor != null ? backgroundColor : "#476ca1";
     this.centerIndex = this.tilegrid.centerIndex;
-    this.drawBackground = function() {
-      this.game.context.fillStyle = this.backgroundColor;
-      return this.game.context.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
-    };
     return this;
   };
 
   Map.prototype.render = function() {
     return this.tilegrid.render.call(this.tilegrid);
+  };
+
+  currentRadian = 0;
+
+  lines = 90;
+
+  Map.prototype.drawBackground = function() {
+    var calc_x, calc_y, ctx, game, line, lineColor, lineWidth, max, middle, pi, previousStroke, radius, rayWidth, space, _i;
+    game = this.game;
+    ctx = game.context;
+    lineWidth = game.canvas.width / lines;
+    lineColor = this.backgroundColor2 || "#6393d8";
+    previousStroke = game.context.strokeStyle;
+    max = 6;
+    pi = 22 / 7;
+    rayWidth = 25;
+    radius = game.canvas.width;
+    space = (360 / lines) * (pi / 180);
+    middle = {
+      x: game.canvas.width / 2,
+      y: game.canvas.height / 2
+    };
+    ctx.fillStyle = this.backgroundColor;
+    ctx.fillRect(0, 0, game.canvas.width, game.canvas.height);
+    ctx.strokeStyle = lineColor;
+    for (line = _i = 0; 0 <= lines ? _i <= lines : _i >= lines; line = 0 <= lines ? ++_i : --_i) {
+      ctx.beginPath();
+      ctx.moveTo(middle.x, middle.y);
+      calc_x = (radius * Math.sin(currentRadian + (space * line))) + middle.x;
+      calc_y = (radius * Math.cos(currentRadian + (space * line))) + middle.y;
+      ctx.lineTo(calc_x, calc_y);
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+      ctx.closePath();
+    }
+    currentRadian += 0.002;
+    if (currentRadian > max) {
+      currentRadian = -1 * max;
+    }
+    ctx.globalAlpha = 1;
+    return ctx.strokeStyle = previousStroke;
   };
 
   Map.prototype.panningBindings = function() {
@@ -322,12 +359,14 @@
   };
 
   Selector.prototype.render = function() {
-    var ctx, dimensions, tg;
+    var ctx, dimensions, ls, tg;
+    ls = 1;
     tg = this.map.tilegrid;
     dimensions = pixels(tg.dimensions.tilesize, this.position, tg.offset, tg.zoom);
     ctx = this.game.context;
     ctx.strokeStyle = this.color || "#eee";
-    return ctx.strokeRect(dimensions.x - 1, dimensions.y - 1, dimensions.size + 1, dimensions.size + 1);
+    ctx.lineWidth = ls;
+    return ctx.strokeRect(dimensions.x - ls, dimensions.y - ls, dimensions.size + ls, dimensions.size + ls);
   };
 
   module.exports.Selector = Selector;

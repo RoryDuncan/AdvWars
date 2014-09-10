@@ -116,16 +116,58 @@ Map = (@name, @tilegrid, @game, @backgroundColor = "#476ca1") ->
   
   @centerIndex = @tilegrid.centerIndex
 
-  @drawBackground = () ->
-    @game.context.fillStyle = @backgroundColor
-    @game.context.fillRect 0, 0, @game.canvas.width, @game.canvas.height
-
   return @
 
 Map::render = () ->
   # maybe have Map as an event emitter.. maybe 
   @tilegrid.render.call(@tilegrid)
 
+currentRadian = 0;
+lines = 90
+Map::drawBackground = () ->
+  
+  game = @game
+  ctx = game.context
+
+  #styles
+  lineWidth = game.canvas.width / (lines)
+  lineColor =  @backgroundColor2 or "#6393d8"
+  # to be restored afterwards
+  previousStroke = game.context.strokeStyle
+
+  # animation or math related
+  max = 6
+  pi = 22 / 7;
+  rayWidth = 25
+  radius = game.canvas.width
+  space = (360 / lines) * (pi / 180)
+  middle = { x: game.canvas.width / 2, y: game.canvas.height / 2}
+
+  # The plain background color
+  ctx.fillStyle = @backgroundColor
+  ctx.fillRect 0, 0, game.canvas.width, game.canvas.height
+
+  # the style of the line
+  ctx.strokeStyle = lineColor
+  for line in [0..lines]
+    # draw a line
+    ctx.beginPath()
+    ctx.moveTo(middle.x, middle.y)
+    
+    calc_x = (radius * Math.sin(currentRadian + (space * line))) + middle.x
+    calc_y = (radius * Math.cos(currentRadian + (space * line))) + middle.y
+    ctx.lineTo(calc_x, calc_y)
+    ctx.lineWidth = lineWidth;
+    ctx.stroke()
+    ctx.closePath()
+  
+  #important part
+  currentRadian += 0.002
+  currentRadian = (-1*max) if currentRadian > max
+
+  # restorations
+  ctx.globalAlpha = 1
+  ctx.strokeStyle = previousStroke
 Map::panningBindings = () ->
   return {
     "keydown numpad8": (@up).bind(@),
@@ -273,11 +315,14 @@ Selector::moveRight = () ->
   @isOutOfBounds()
 
 Selector::render = () ->
-  
+  # line size
+  ls = 1
+
   tg = @map.tilegrid
   dimensions = pixels( tg.dimensions.tilesize, @position, tg.offset, tg.zoom )
   ctx = @game.context
   ctx.strokeStyle = @color or "#eee"
-  ctx.strokeRect dimensions.x - 1, dimensions.y - 1, dimensions.size + 1, dimensions.size + 1
+  ctx.lineWidth = ls
+  ctx.strokeRect dimensions.x - ls, dimensions.y - ls, dimensions.size + ls, dimensions.size + ls
 
 module.exports.Selector = Selector
