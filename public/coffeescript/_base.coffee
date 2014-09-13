@@ -207,17 +207,17 @@ game.on "ready", game.start, game
 
 finishedLoadingImages = (loadedImages) ->
   game.Sprites.spritesheet = loadedImages[0]
-  spritelistPromise = game.getSpriteListJSON "/JSON/spritelist.json"
+  spritelistPromise = game.getSpriteListJSON "./json/spritelist.json"
   mapPromise = null
   spritelistPromise.then (e) ->
 
-    mapPromise = game.getMapFromUrl "/JSON/testmap.json"
+    mapPromise = game.getMapFromUrl "./json/testmap.json"
     mapPromise.then () ->
       game.loadMap "testmap"
   return
 
 # need to promise the tits out of this
-loader = new utils.ImageLoader ["sprites/spritesheet.png"], finishedLoadingImages
+loader = new utils.ImageLoader ["./sprites/spritesheet.png"], finishedLoadingImages
 
 
 ###

@@ -229,17 +229,17 @@
   finishedLoadingImages = function(loadedImages) {
     var mapPromise, spritelistPromise;
     game.Sprites.spritesheet = loadedImages[0];
-    spritelistPromise = game.getSpriteListJSON("/JSON/spritelist.json");
+    spritelistPromise = game.getSpriteListJSON("./json/spritelist.json");
     mapPromise = null;
     spritelistPromise.then(function(e) {
-      mapPromise = game.getMapFromUrl("/JSON/testmap.json");
+      mapPromise = game.getMapFromUrl("./json/testmap.json");
       return mapPromise.then(function() {
         return game.loadMap("testmap");
       });
     });
   };
 
-  loader = new utils.ImageLoader(["sprites/spritesheet.png"], finishedLoadingImages);
+  loader = new utils.ImageLoader(["./sprites/spritesheet.png"], finishedLoadingImages);
 
   /*
   
