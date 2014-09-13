@@ -125,7 +125,7 @@ module.exports.isInt = (n) ->
   return true if (n / Math.floor(n) is 1 or n / Math.floor(n) is -1)
   return false
 module.exports.isEven = (n) ->
-  return if n % 2 is 0 then true else false  
+  return if n % 2 is 0 then true else false 
 module.exports.has = (obj, key) ->
   return Object.hasOwnProperty.call(obj, key)
 

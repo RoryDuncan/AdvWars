@@ -168,6 +168,7 @@ Map::drawBackground = () ->
   # restorations
   ctx.globalAlpha = 1
   ctx.strokeStyle = previousStroke
+
 Map::panningBindings = () ->
   return {
     "keydown numpad8": (@up).bind(@),
@@ -192,9 +193,14 @@ Map::right = () ->
 
 Map::play = () ->
   console.log "Playing #{@name}!"
+  # the selector instance
   selector = new Selector @game, @, "select"
-  selectorPanProfile = new input.InputProfile "selector-panning", @game.inputHandler,  selector.movementActionBindings()
+
+  # the profile that keeps track of movement is initialised, and enabled
+  selectorPanProfile = new input.InputProfile "selector-panning", @game.inputHandler, selector.movementActionBindings()
   selectorPanProfile.enable();
+  # then
+
   @game.Layers.add.call @game, 
     name: "selector",
     layer: 6,
@@ -219,20 +225,28 @@ Selector = (@game, @map, @type = "select") ->
   @grid = utils.generateNormalizedGrid @map.tilegrid.dimensions.width, @map.tilegrid.dimensions.height
   
   src = @grid[ @centerIndex ]
-  @position = extend {}, src # {x: src.x, y:src.y, x0: src.x0, y0:src.y0}
+  @position = extend {}, src
 
   @map.selector = @
 
   return @
 
 
-Selector::getIndexOf = (position = {x:0, y:0, id:0}) ->
+Selector::getGameObjectsHere = (p) ->
 
-  p = position
+  # get units,
+  # if none, get buildings(todo)
+  # if none, then
+  # get the tile at that position.
+
+  selected = @getUnitAt(@position) or @getTile()
+  return selected
+
+Selector::getIndexOf = (position = {x:0, y:0, id:0}) ->
   index = null
   @grid.forEach (el, i) ->
     # I would transform into a cat if I could.
-    if el.x is p.x and el.y is p.y
+    if el.x is position.x and el.y is position.y
       index = i
       
 
@@ -244,8 +258,9 @@ Selector::getIndex = () ->
 Selector::getTile = () ->
   return @grid[ @getIndex() ] 
 
-Selector::getUnit = () ->
-  # todo, after units are implemented
+Selector::getUnitAt = (position) ->
+  return {} unless @game.UnitManager
+  @game.UnitManager.getUnitAt(position)
 
 
 Selector::isOutOfBounds = (move = true) ->
@@ -281,6 +296,7 @@ Selector::isOutOfBounds = (move = true) ->
   return isOutOfBounds
 
 Selector::move = (x, y) ->
+  # todo...
   @position.x += x
   @position.y += y
   return
@@ -292,8 +308,7 @@ Selector::movementActionBindings = () ->
     "keydown left": @moveLeft.bind(@),
     "keydown right": @moveRight.bind(@)
   }
-Selector::move = (x, y) ->
-  console.log "wow"
+
 Selector::moveUp = () ->
   p = @position
   p.y = utils.limitToRange( (p.y-1), p.start.y, p.end.y )

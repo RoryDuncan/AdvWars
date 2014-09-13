@@ -79,25 +79,69 @@ UnitManager = (@game, @currentPlayer = "player1", otherPlayers = []) ->
   otherPlayers.forEach (name) ->
     players[name] = []
 
+  # a cache of unit positions
+  @_cache = []
+  @_hasChanged = false;
+
   @addUnit = (Unit, player) ->
     # later this might be replaced with an AJAX
     # and handled by the server
     if player is undefined or player is @currentPlayer
       currentPlayerArmy.push Unit
     else players[player].push Unit
+    return Unit
 
   @get = () ->
     return players
 
   return @
 
-
 extend UnitManager::, EventEmitter::
+
+UnitManager::cacheCurrentPositions = () ->
+  # we are unsure if current map exists right now
+  @map = @map or (@game.currentMap or {}).map
+  return if @map is undefined
+
+  # @_cacheSize = @_cacheSize or @map.tilegrid.tiles.length
+  # # a cache of visible units on the tilegrid
+  # @_cache = []
+
+
+# UnitManager::changed = (state = true) ->
+#   @_hasChanged = state
+
+
+UnitManager::isTileTaken = () ->
+  
+
+
+UnitManager::getUnitById = (id) ->
+
+UnitManager::getUnitAtTile = () ->
+  # todo
+
+UnitManager::getUnitAt = (position) ->
+
+  players = @get()
+  console.log players, position
+
+  for playername, index of players
+    #console.log "getting player:", playername
+    for unit, unitIndex in players[playername]
+      #console.log "getting unit:", unit
+      continue unless unit.visible is true
+      if unit.position.x is position.x and unit.position.y is position.y
+        #console.log "match with", unit
+        return unit
+  return false
+
 
 
 UnitManager::reset = () ->
-  console.log "test"
-
+  players = @get()
+  player.forEach (el) ->
+    el = []
 
 UnitManager::set = () ->
   console.log "todo"

@@ -244,8 +244,14 @@
     return this;
   };
 
+  Selector.prototype.getGameObjectsHere = function(p) {
+    var selected;
+    selected = this.getUnitAt(this.position) || this.getTile();
+    return selected;
+  };
+
   Selector.prototype.getIndexOf = function(position) {
-    var index, p;
+    var index;
     if (position == null) {
       position = {
         x: 0,
@@ -253,10 +259,9 @@
         id: 0
       };
     }
-    p = position;
     index = null;
     this.grid.forEach(function(el, i) {
-      if (el.x === p.x && el.y === p.y) {
+      if (el.x === position.x && el.y === position.y) {
         return index = i;
       }
     });
@@ -271,7 +276,12 @@
     return this.grid[this.getIndex()];
   };
 
-  Selector.prototype.getUnit = function() {};
+  Selector.prototype.getUnitAt = function(position) {
+    if (!this.game.UnitManager) {
+      return {};
+    }
+    return this.game.UnitManager.getUnitAt(position);
+  };
 
   Selector.prototype.isOutOfBounds = function(move) {
     var amount, dimensions, isOutOfBounds, outOfBounds, tg;
@@ -324,10 +334,6 @@
       "keydown left": this.moveLeft.bind(this),
       "keydown right": this.moveRight.bind(this)
     };
-  };
-
-  Selector.prototype.move = function(x, y) {
-    return console.log("wow");
   };
 
   Selector.prototype.moveUp = function() {

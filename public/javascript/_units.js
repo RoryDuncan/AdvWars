@@ -94,12 +94,15 @@
     otherPlayers.forEach(function(name) {
       return players[name] = [];
     });
+    this._cache = [];
+    this._hasChanged = false;
     this.addUnit = function(Unit, player) {
       if (player === void 0 || player === this.currentPlayer) {
-        return currentPlayerArmy.push(Unit);
+        currentPlayerArmy.push(Unit);
       } else {
-        return players[player].push(Unit);
+        players[player].push(Unit);
       }
+      return Unit;
     };
     this.get = function() {
       return players;
@@ -109,8 +112,45 @@
 
   extend(UnitManager.prototype, EventEmitter.prototype);
 
+  UnitManager.prototype.cacheCurrentPositions = function() {
+    this.map = this.map || (this.game.currentMap || {}).map;
+    if (this.map === void 0) {
+
+    }
+  };
+
+  UnitManager.prototype.isTileTaken = function() {};
+
+  UnitManager.prototype.getUnitById = function(id) {};
+
+  UnitManager.prototype.getUnitAtTile = function() {};
+
+  UnitManager.prototype.getUnitAt = function(position) {
+    var index, playername, players, unit, unitIndex, _i, _len, _ref;
+    players = this.get();
+    console.log(players, position);
+    for (playername in players) {
+      index = players[playername];
+      _ref = players[playername];
+      for (unitIndex = _i = 0, _len = _ref.length; _i < _len; unitIndex = ++_i) {
+        unit = _ref[unitIndex];
+        if (unit.visible !== true) {
+          continue;
+        }
+        if (unit.position.x === position.x && unit.position.y === position.y) {
+          return unit;
+        }
+      }
+    }
+    return false;
+  };
+
   UnitManager.prototype.reset = function() {
-    return console.log("test");
+    var players;
+    players = this.get();
+    return player.forEach(function(el) {
+      return el = [];
+    });
   };
 
   UnitManager.prototype.set = function() {
