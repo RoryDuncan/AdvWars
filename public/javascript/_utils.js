@@ -59,19 +59,26 @@
     list = [];
     this.set = this.add = function(options) {
       var fn, name;
+      if (list[options.layer] !== void 0) {
+        console.error("That layer (layer " + options.layer + ") is allocated already to '" + list[options.layer].name + "'.");
+      }
       name = options.name;
-      fn = options.fn || new Function("console.log('blank fn')");
+      fn = options.fn || new Function("");
       list[options.layer] = {
         name: name,
         fn: fn,
         scope: options.scope
       };
+      return list[options.layer];
     };
     this.remove = this["delete"] = function(layer) {
       var del;
       del = list[layer];
       delete list[layer];
       return del;
+    };
+    this.debug = function() {
+      return console.log(list);
     };
     this.render = function(layer) {
       var lyr;

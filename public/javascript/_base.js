@@ -1,5 +1,5 @@
 (function() {
-  var $, Clock, EventEmitter, Game, Sprite, Unit, UnitManager, Units, canvas, extend, finishedLoadingImages, game, input, loader, mapUtils, utils;
+  var $, Clock, EventEmitter, Game, Sprite, UI, Unit, UnitManager, Units, canvas, extend, finishedLoadingImages, game, input, loader, mapUtils, utils;
 
   console.log("%cAdvanced Wars Clone", "color: #c88");
 
@@ -27,17 +27,10 @@
 
   $ = require("jquery");
 
-  /*
-  
-    RENDER LAYERS
-  
-    0 backdrop
-    3 map render
-  */
-
+  UI = require("./_ui");
 
   Game = function(canvas, width, height) {
-    var UM, gameloop, render;
+    var gameloop, render;
     this.canvas = canvas;
     this.width = width;
     this.height = height;
@@ -48,21 +41,14 @@
     this.context = this.canvas.getContext("2d");
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    this.context.fillStyle = "#48c";
-    this.context.fillRect(0, 0, this.width, this.height);
     this.Layers = new utils.RenderList(this);
     this.Sprites = {};
     this.maps = {};
     this.inputHandler = new input.InputHandler(document);
     this.inputHandler.profiles = {};
     this.clock = new Clock();
-    this.UnitManager = UM = new UnitManager(this);
-    this.Layers.add({
-      name: "unit render",
-      layer: 5,
-      fn: UM.render,
-      scope: UM
-    });
+    this.UnitManager = new UnitManager(this);
+    this.UI = new UI.Manager(this);
     render = function() {
       return this.Layers.renderAll.call(this.Layers);
     };
@@ -76,7 +62,7 @@
   extend(Game.prototype, EventEmitter.prototype);
 
   Game.prototype.start = function(mode) {
-    var mapPanProfile, mapPanning, testUnit, that;
+    var mapPanProfile, mapPanning, testUnit, that, x;
     console.log("Starting...");
     this.clock.start();
     that = this;
@@ -84,11 +70,16 @@
     mapPanning = this.currentMap.map.panningBindings.call(this.currentMap.map);
     mapPanProfile = new input.InputProfile("map-panning", this.inputHandler, mapPanning);
     mapPanProfile.enable();
-    console.log("%c'Unit' Testing", "text-decoration: underline");
+    console.groupCollapsed("%cUnit Object Test", "text-decoration: underline");
     console.log(this.UnitManager);
-    testUnit = new Unit(this, "soldier");
-    testUnit.show();
-    return console.log(testUnit);
+    testUnit = new Unit(this, "soldier").show();
+    console.log(testUnit);
+    console.groupEnd("%cUnit Object Test", "text-decoration: underline");
+    console.group("%cUserInterface Test", "text-decoration: underline");
+    x = this.UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show();
+    console.log(x);
+    x.relativeTo(this.currentMap.map.selector);
+    return console.groupEnd("%cUserInterface Test", "text-decoration: underline");
   };
 
   Game.prototype.pause = function() {
@@ -130,8 +121,8 @@
       scope: map
     });
     this.Layers.add({
-      name: "map render",
-      layer: 3,
+      name: "map",
+      layer: 2,
       fn: map.render,
       scope: map
     });

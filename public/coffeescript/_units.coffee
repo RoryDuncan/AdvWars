@@ -59,10 +59,12 @@ Unit::render = () ->
 Unit::show = () ->
   # whether or not the unit will be rendered
   @visible = true
+  return @
 
 Unit::hide = () ->
   # whether or not the unit will be rendered
   @visible = false
+  return @
 
 Unit::addToManagement = (player) ->
   return unless @game
@@ -79,10 +81,6 @@ UnitManager = (@game, @currentPlayer = "player1", otherPlayers = []) ->
   otherPlayers.forEach (name) ->
     players[name] = []
 
-  # a cache of unit positions
-  @_cache = []
-  @_hasChanged = false;
-
   @addUnit = (Unit, player) ->
     # later this might be replaced with an AJAX
     # and handled by the server
@@ -94,29 +92,26 @@ UnitManager = (@game, @currentPlayer = "player1", otherPlayers = []) ->
   @get = () ->
     return players
 
+  # initialize for rendering
+  @game.Layers.add 
+    name: "units",
+    layer: 5,
+    fn: @render,
+    scope: @
+
+
   return @
 
 extend UnitManager::, EventEmitter::
 
-UnitManager::cacheCurrentPositions = () ->
-  # we are unsure if current map exists right now
-  @map = @map or (@game.currentMap or {}).map
-  return if @map is undefined
-
-  # @_cacheSize = @_cacheSize or @map.tilegrid.tiles.length
-  # # a cache of visible units on the tilegrid
-  # @_cache = []
-
-
-# UnitManager::changed = (state = true) ->
-#   @_hasChanged = state
-
-
 UnitManager::isTileTaken = () ->
-  
+  # todo
+  return true  
 
 
 UnitManager::getUnitById = (id) ->
+  # filter it like a fishtank bby
+  return
 
 UnitManager::getUnitAtTile = () ->
   # todo

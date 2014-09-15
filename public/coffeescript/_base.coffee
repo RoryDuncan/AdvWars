@@ -13,58 +13,39 @@ mapUtils = require      "./_map"
 input = require         "./_input"
 Clock = require         "./_clock"
 $ = require             "jquery"
-
-###
-
-  RENDER LAYERS
-
-  0 backdrop
-  3 map render
-
-
-###
+UI = require           "./_ui"
 
 Game = (@canvas, @width, @height) ->
   
   gameloop = Clock.Loop
-  @__events = {} # for event emitter
+  @__events = {} # initialize for event emitter
   @width = @width or window.innerWidth
   @height = @height or window.innerHeight
 
   @context = @canvas.getContext("2d")
   @canvas.width = @width
   @canvas.height = @height
-  @context.fillStyle = "#48c"
-  @context.fillRect(0, 0, @width, @height)
 
   @Layers = new utils.RenderList(@)
   @Sprites = {}
   @maps = {}
-  @inputHandler = new input.InputHandler( document )
+  @inputHandler = new input.InputHandler(document)
   @inputHandler.profiles = {}
   @clock = new Clock()
-  @UnitManager = UM = new UnitManager(@)
+  @UnitManager = new UnitManager(@)
+  @UI = new UI.Manager(@)
 
-  @Layers.add 
-    name: "unit render",
-    layer: 5,
-    fn: UM.render,
-    scope: UM
 
   # internal render loop
   render = () ->
-
-    # iterates through any 'layers'
-    #and calls them in order (0,1,2,etc)
+    # renders are layers ascendingly
     @Layers.renderAll.call(@Layers)
-    
+
   @__loop = @clock.loop "render", render, [], @
   @__loop.for({interval:17})
 
   return @
 
-
-# extend EventEmitter
 extend Game::, EventEmitter::
 
 
@@ -81,11 +62,23 @@ Game::start = (mode) ->
   mapPanProfile = new input.InputProfile("map-panning", @inputHandler, mapPanning)
   mapPanProfile.enable()
 
-  console.log "%c'Unit' Testing", "text-decoration: underline"
+  # Unit
+
+  console.groupCollapsed "%cUnit Object Test", "text-decoration: underline"
   console.log @UnitManager
-  testUnit = new Unit(@, "soldier")
-  testUnit.show()
+  testUnit = new Unit(@, "soldier").show()
   console.log testUnit
+  console.groupEnd "%cUnit Object Test", "text-decoration: underline"
+
+
+  # User Interface
+
+  console.group "%cUserInterface Test", "text-decoration: underline"
+
+  x = @UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show()
+  console.log x
+  x.relativeTo( @currentMap.map.selector )
+  console.groupEnd "%cUserInterface Test", "text-decoration: underline"
 
 Game::pause = () ->
   @clock.pause()
@@ -119,8 +112,8 @@ Game::loadMap = (name) ->
     scope: map
 
   @Layers.add 
-    name: "map render",
-    layer: 3,
+    name: "map",
+    layer: 2,
     fn: map.render,
     scope: map
 

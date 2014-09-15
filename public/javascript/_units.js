@@ -66,11 +66,13 @@
   };
 
   Unit.prototype.show = function() {
-    return this.visible = true;
+    this.visible = true;
+    return this;
   };
 
   Unit.prototype.hide = function() {
-    return this.visible = false;
+    this.visible = false;
+    return this;
   };
 
   Unit.prototype.addToManagement = function(player) {
@@ -94,8 +96,6 @@
     otherPlayers.forEach(function(name) {
       return players[name] = [];
     });
-    this._cache = [];
-    this._hasChanged = false;
     this.addUnit = function(Unit, player) {
       if (player === void 0 || player === this.currentPlayer) {
         currentPlayerArmy.push(Unit);
@@ -107,19 +107,20 @@
     this.get = function() {
       return players;
     };
+    this.game.Layers.add({
+      name: "units",
+      layer: 5,
+      fn: this.render,
+      scope: this
+    });
     return this;
   };
 
   extend(UnitManager.prototype, EventEmitter.prototype);
 
-  UnitManager.prototype.cacheCurrentPositions = function() {
-    this.map = this.map || (this.game.currentMap || {}).map;
-    if (this.map === void 0) {
-
-    }
+  UnitManager.prototype.isTileTaken = function() {
+    return true;
   };
-
-  UnitManager.prototype.isTileTaken = function() {};
 
   UnitManager.prototype.getUnitById = function(id) {};
 

@@ -30,23 +30,27 @@ module.exports.RenderList = (@game) ->
   list = []
 
   @set = @add = (options) ->
+    console.error "That layer (layer #{options.layer}) is allocated already to '#{list[options.layer].name}'." unless list[options.layer] is undefined 
     name = options.name
-    fn = options.fn or new Function("console.log('blank fn')")
+    fn = options.fn or new Function("")
 
     list[options.layer] = {name, fn, scope: options.scope}
-    return
+    return list[options.layer]
 
   @remove = @delete = (layer) ->
     del = list[layer]
     delete list[layer]
     return del
 
+  @debug = () ->
+    console.log list
+
   @render = (layer) ->
+
     lyr = list[layer]
     lyr.fn.call(lyr.scope or lyr.fn or null, lyr)
 
   @renderAll = () ->
-
     for item, index in list
       continue unless item
       item.fn.call(item.scope or item.fn or null, item)
