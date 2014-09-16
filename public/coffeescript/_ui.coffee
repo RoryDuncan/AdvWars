@@ -16,8 +16,8 @@ Dialogue = (@game, options) ->
 
   # defaults
   @data = {
-    text: {color: "#000", size: "14px", family: "Helvetica", value: "" },
-    heading: {color: "#000", size: "20px", family: "Helvetica", value: ""}
+    text: {color: "#fff", size: "14px", family: "Helvetica", value: "" },
+    heading: {color: "#fff", size: "20px", family: "Helvetica", value: ""}
   }
   @position = {
     x: 1,
@@ -86,7 +86,6 @@ Dialogue::relativeTo = (obj) ->
   @position.absolute = false
 
 Dialogue::getRelativePositions = () ->
-  console.log "calculating things"
   a = @attachedTo
   p = {x: @position.x + a.position.x,y: @position.y + a.position.y}
 

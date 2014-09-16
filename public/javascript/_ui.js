@@ -21,13 +21,13 @@
     this.game = game;
     this.data = {
       text: {
-        color: "#000",
+        color: "#fff",
         size: "14px",
         family: "Helvetica",
         value: ""
       },
       heading: {
-        color: "#000",
+        color: "#fff",
         size: "20px",
         family: "Helvetica",
         value: ""
@@ -104,7 +104,6 @@
 
   Dialogue.prototype.getRelativePositions = function() {
     var a, dimensions, p;
-    console.log("calculating things");
     a = this.attachedTo;
     p = {
       x: this.position.x + a.position.x,
