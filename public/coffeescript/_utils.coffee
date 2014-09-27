@@ -16,7 +16,7 @@ module.exports.EventEmitter = class EventEmitter
     return if @__events is undefined
     return @__events[name]
 
-  trigger: (name, args = []) ->
+  trigger: (name, args...) ->
     return if @__events is undefined
     f = @get name
     return unless f isnt undefined

@@ -34,8 +34,8 @@
       }
     };
     this.position = {
-      x: 1,
-      y: 1,
+      x: -1,
+      y: -1,
       absolute: true,
       calc: {
         x: 0,
@@ -44,7 +44,6 @@
     };
     this.separator = "|";
     this.id = utils.UID("dialogue", true);
-    this.style = {};
     this.visible = true;
     this.has = {};
     return extend(this, options);
@@ -183,14 +182,36 @@
   */
 
 
-  Menu = function(game, options) {
+  Menu = function(game, name, options) {
     this.game = game;
-    return this;
+    this.name = name;
+    this.id = utils.UID("menu", true);
+    this.visible = true;
+    this.data = {};
+    return extend(this, options);
   };
 
   extend(Menu.prototype, EventEmitter.prototype);
 
   Menu.prototype.render = function() {};
+
+  Menu.prototype.list = function(obj) {
+    var callback, count, name, _ref;
+    count = 0;
+    this.data.menu = obj;
+    console.log("order:");
+    _ref = this.data.menu;
+    for (name in _ref) {
+      callback = _ref[name];
+      console.log(name);
+      count++;
+      if (callback !== null) {
+        this.on(name, callback || new Function);
+      }
+    }
+    this.length = count;
+    return this;
+  };
 
   module.exports.Menu = Menu;
 
@@ -204,6 +225,7 @@
   Manager = function(game) {
     this.game = game;
     this.list = [];
+    this.menus = [];
     this.game.Layers.add({
       name: "UserInterface",
       layer: 7,
@@ -221,8 +243,12 @@
     return this.list[length - 1];
   };
 
-  Manager.prototype.Menu = function(options) {
-    return new Menu(this.game, options);
+  Manager.prototype.Menu = function(name, options) {
+    var menu;
+    menu = new Menu(this.game, options);
+    this.list.push(menu);
+    this.menus.push(menu);
+    return menu;
   };
 
   Manager.prototype.render = function() {

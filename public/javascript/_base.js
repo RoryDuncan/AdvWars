@@ -62,7 +62,7 @@
   extend(Game.prototype, EventEmitter.prototype);
 
   Game.prototype.start = function(mode) {
-    var mapPanProfile, mapPanning, testUnit, that, x;
+    var d, mapPanProfile, mapPanning, menu, menuAction, testUnit, that;
     console.log("Starting...");
     this.clock.start();
     that = this;
@@ -76,9 +76,19 @@
     console.log(testUnit);
     console.groupEnd("%cUnit Object Test", "text-decoration: underline");
     console.group("%cUserInterface Test", "text-decoration: underline");
-    x = this.UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show();
-    console.log(x);
-    x.relativeTo(this.currentMap.map.selector);
+    d = this.UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show();
+    console.log(d);
+    d.relativeTo(this.currentMap.map.selector);
+    menuAction = function(x) {
+      return console.log("" + x + " was called.");
+    };
+    menu = this.UI.Menu().list({
+      "hello": menuAction,
+      "world": null,
+      "what": menuAction,
+      "is": menuAction
+    });
+    console.log(menu);
     return console.groupEnd("%cUserInterface Test", "text-decoration: underline");
   };
 

@@ -75,9 +75,20 @@ Game::start = (mode) ->
 
   console.group "%cUserInterface Test", "text-decoration: underline"
 
-  x = @UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show()
-  console.log x
-  x.relativeTo( @currentMap.map.selector )
+  d = @UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show()
+  console.log d
+  d.relativeTo( @currentMap.map.selector )
+  menuAction = (x) ->
+    console.log "#{x} was called."
+
+  menu = @UI.Menu().list
+    "hello": menuAction,
+    "world": null,
+    "what": menuAction,
+    "is": menuAction
+
+  console.log menu
+
   console.groupEnd "%cUserInterface Test", "text-decoration: underline"
 
 Game::pause = () ->

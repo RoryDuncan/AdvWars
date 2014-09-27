@@ -33,11 +33,9 @@
       return this.__events[name];
     };
 
-    EventEmitter.prototype.trigger = function(name, args) {
-      var f;
-      if (args == null) {
-        args = [];
-      }
+    EventEmitter.prototype.trigger = function() {
+      var args, f, name;
+      name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       if (this.__events === void 0) {
         return;
       }

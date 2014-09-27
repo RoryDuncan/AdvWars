@@ -20,8 +20,8 @@ Dialogue = (@game, options) ->
     heading: {color: "#fff", size: "20px", family: "Helvetica", value: ""}
   }
   @position = {
-    x: 1,
-    y: 1,
+    x: -1,
+    y: -1,
     absolute: true,
     calc: {
       x: 0,
@@ -30,7 +30,6 @@ Dialogue = (@game, options) ->
   }
   @separator = "|"
   @id = utils.UID("dialogue", true)
-  @style = {}
   @visible = true
   @has = {}
 
@@ -143,30 +142,47 @@ Dialogue::render = () ->
   if @has.heading
     marginTop = @_renderHeading()
   ctx = @game.context
+
   ctx.fillStyle = @data.text.color or "#000"
   ctx.font = @getFont("text")
   ctx.fillText(@data.text.value, (@position.calc.x or @position.x), marginTop + (@position.calc.y or @position.y))
-
-
-
   return
 
 module.exports.Dialogue = Dialogue
+
+
 
 ###
     Menu 
 ###
 
-Menu = (@game, options) ->
 
 
-  return @
+Menu = (@game, @name, options) ->
+  @id = utils.UID("menu", true)
+  @visible = true
+  @data = {}
+  return extend @, options
 
 
 extend Menu::, EventEmitter::
 
 Menu::render = () ->
-  return
+
+  return 
+
+Menu::list = (obj) ->
+  count = 0
+  @data.menu = obj
+  console.log "order:"
+  for name, callback of @data.menu
+    console.log name
+    count++
+    if callback isnt null
+      @on name, callback or new Function
+
+  @length = count
+  return @
 
 module.exports.Menu = Menu
 
@@ -180,9 +196,8 @@ module.exports.Menu = Menu
 
 Manager = (@game) ->
   @list = []
-
+  @menus = []
   # initialize for rendering
-
   @game.Layers.add 
     name: "UserInterface",
     layer: 7,
@@ -198,8 +213,11 @@ Manager::Dialogue = (options) ->
   return @list[length - 1]
   
 
-Manager::Menu = (options) ->
-  return new Menu @game, options
+Manager::Menu = (name, options) ->
+  menu = new Menu @game, options
+  @list.push menu
+  @menus.push menu
+  return menu
 
 Manager::render = () ->
 
