@@ -1,6 +1,8 @@
 
 console.log "%cAdvanced Wars Clone", "color: #c88"
 
+
+
 require                 "./_rafPolyfill"
 utils = require         "./_utils"
 extend =                utils.extend   
@@ -48,7 +50,6 @@ Game = (@canvas, @width, @height) ->
 
 extend Game::, EventEmitter::
 
-
 Game::start = (mode) ->
   console.log "Starting..."
   @clock.start()
@@ -81,14 +82,15 @@ Game::start = (mode) ->
   menuAction = (x) ->
     console.log "#{x} was called."
 
-  menu = @UI.Menu().list
-    "hello": menuAction,
-    "world": null,
-    "what": menuAction,
-    "is": menuAction
+  menu = @UI.Menu "test",
+    "data": 
+      "hello": menuAction,
+      "world": null,
+      "what" : menuAction,
+      "is"   : menuAction
 
+  menu.render(".menu")
   console.log menu
-
   console.groupEnd "%cUserInterface Test", "text-decoration: underline"
 
 Game::pause = () ->
@@ -189,7 +191,6 @@ Game::_createMap = (mapData) ->
   name = mapData.name
   tilegrid = new mapUtils.TileGrid(@, mapData.tiles, mapData.dimensions)
   @maps[name] = new mapUtils.Map(name, tilegrid, @)
-
 
 
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ #

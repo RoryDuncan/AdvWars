@@ -11,3 +11,49 @@ canvas {
 	vertical-align: center;
 	margin: 0 auto;
 }
+
+@import url(http://fonts.googleapis.com/css?family=Lato:300,400,700);
+body {
+  background-color: #f5f5f5;
+  font-family: "Lato", Helvetica, Arial;
+  font-weight: lighter;
+  font-size: 16px;
+}
+
+.list {
+  font-size: list--font-sizepx;
+  line-height: list--font-sizepx;
+  background-color: #fff;
+  position: fixed;
+  top: 50px;
+  right: 200px;
+  width: auto;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -ms-user-select: none;
+}
+.list ul {
+  margin: 0 0;
+  padding: 0 0;
+  position: normal;
+  list-style-type: none;
+}
+.list ul li a,
+.list ul li a:visited {
+  display: block;
+  color: #888;
+  padding: 21.6px 28.8px;
+  text-decoration: none;
+  border-top: 1px solid #eaeaea;
+}
+.list ul li:first-of-type {
+  border-bottom: none;
+}
+.list ul li a.active {
+  text-shadow: 0px 1px 1px #8f8;
+  background-color: #fafafa;
+  color: #26f;
+}
