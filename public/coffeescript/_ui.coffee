@@ -221,8 +221,9 @@ Menu::compile = (obj) ->
   for key, value of @data
     continue if key is "length"  
     listItems += li.call @, key, @id
+    console.log typeof value, typeof value isnt "function"
     if typeof value isnt "function"
-      value = @noop
+      @data[key] = @noop
     @names.push key
   @length = count
   @compiledString = header + listItems + footer
@@ -237,12 +238,10 @@ methodizer = ($method, isSubject = true) ->
   if isSubject
     return (selector) ->
       @exists = true
-      console.log $method
       $(@compiledString)[$method] selector  
   else
     return (selector) ->
       @exists = true
-      console.log selector, $method
       $(selector)[$method] @compiledString
 
 $meth = # CASHMONEYMETH
@@ -263,17 +262,10 @@ Menu::update = () ->
   $("##{@id} ul").html(@compiledListItems)
   return @
 
-Menu::render = (selector) ->
+Menu::render = (@selector) ->
   return @update() if @exists
-  if selector is undefined 
-    @selector = "body" or @id
-    @appendTo @selector
-    @deferred.call(@)
-    @deferred = @noop
-    return @
-
-  @selector = selector
-  @html selector
+  return if @selector is undefined
+  @html @selector
   @deferred.call(@)
   @deferred = @noop
   return @
@@ -318,7 +310,7 @@ Menu::destroy = () ->
 
   return
 
-Menu::next = () -> 
+Menu::next = () ->
   if @active is @length - 1
     @active = 0
   else @active += 1
@@ -344,12 +336,12 @@ Menu::selectedElement = () ->
   # return the current selected 
   return $("##{@id} li a.active")
 
-Menu::getInputProfile = () ->
+Menu::getInputBindings = () ->
   that = @
   return {
-    "up":           that.prev.bind(that),
-    "down":         that.next.bind(that),
-    "keyup enter":  that.select.bind(that)}
+    "keyup up":    that.prev.bind(that),
+    "keyup down":  that.next.bind(that),
+    "keyup enter":    that.select.bind(that)}
 
 module.exports.Menu = Menu
 

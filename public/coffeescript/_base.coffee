@@ -84,12 +84,18 @@ Game::start = (mode) ->
 
   menu = @UI.Menu "test",
     "data": 
-      "hello": menuAction,
-      "world": null,
-      "what" : menuAction,
-      "is"   : menuAction
+      "test": menuAction,
+      "test2": null,
+      "test3" : menuAction,
+      "close"   : menuAction
 
   menu.render(".menu")
+
+  menuNavigate = menu.getInputBindings()
+  menuProfile = new input.InputProfile("menu-navigation", @inputHandler, menuNavigate)
+  mapPanProfile.disable()
+  menuProfile.enable()
+
   console.log menu
   console.groupEnd "%cUserInterface Test", "text-decoration: underline"
 

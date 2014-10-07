@@ -62,7 +62,7 @@ Game = function(canvas, width, height) {
 extend(Game.prototype, EventEmitter.prototype);
 
 Game.prototype.start = function(mode) {
-  var d, mapPanProfile, mapPanning, menu, menuAction, testUnit, that;
+  var d, mapPanProfile, mapPanning, menu, menuAction, menuNavigate, menuProfile, testUnit, that;
   console.log("Starting...");
   this.clock.start();
   that = this;
@@ -84,13 +84,17 @@ Game.prototype.start = function(mode) {
   };
   menu = this.UI.Menu("test", {
     "data": {
-      "hello": menuAction,
-      "world": null,
-      "what": menuAction,
-      "is": menuAction
+      "test": menuAction,
+      "test2": null,
+      "test3": menuAction,
+      "close": menuAction
     }
   });
   menu.render(".menu");
+  menuNavigate = menu.getInputBindings();
+  menuProfile = new input.InputProfile("menu-navigation", this.inputHandler, menuNavigate);
+  mapPanProfile.disable();
+  menuProfile.enable();
   console.log(menu);
   return console.groupEnd("%cUserInterface Test", "text-decoration: underline");
 };

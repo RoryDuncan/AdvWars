@@ -284,8 +284,9 @@ Menu.prototype.compile = function(obj) {
       continue;
     }
     listItems += li.call(this, key, this.id);
+    console.log(typeof value, typeof value !== "function");
     if (typeof value !== "function") {
-      value = this.noop;
+      this.data[key] = this.noop;
     }
     this.names.push(key);
   }
@@ -302,13 +303,11 @@ methodizer = function($method, isSubject) {
   if (isSubject) {
     return function(selector) {
       this.exists = true;
-      console.log($method);
       return $(this.compiledString)[$method](selector);
     };
   } else {
     return function(selector) {
       this.exists = true;
-      console.log(selector, $method);
       return $(selector)[$method](this.compiledString);
     };
   }
@@ -337,18 +336,14 @@ Menu.prototype.update = function() {
 };
 
 Menu.prototype.render = function(selector) {
+  this.selector = selector;
   if (this.exists) {
     return this.update();
   }
-  if (selector === void 0) {
-    this.selector = "body" || this.id;
-    this.appendTo(this.selector);
-    this.deferred.call(this);
-    this.deferred = this.noop;
-    return this;
+  if (this.selector === void 0) {
+    return;
   }
-  this.selector = selector;
-  this.html(selector);
+  this.html(this.selector);
   this.deferred.call(this);
   this.deferred = this.noop;
   return this;
@@ -436,12 +431,12 @@ Menu.prototype.selectedElement = function() {
   return $("#" + this.id + " li a.active");
 };
 
-Menu.prototype.getInputProfile = function() {
+Menu.prototype.getInputBindings = function() {
   var that;
   that = this;
   return {
-    "up": that.prev.bind(that),
-    "down": that.next.bind(that),
+    "keyup up": that.prev.bind(that),
+    "keyup down": that.next.bind(that),
     "keyup enter": that.select.bind(that)
   };
 };
