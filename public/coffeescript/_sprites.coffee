@@ -8,7 +8,7 @@ Sprite = (@spritesheet, options = {x:0, y:0, w:50, h:50}, @game) ->
 
 Sprite::render = (dx, dy, dw, dh, zoom = 1) ->
   console.assert @game isnt undefined, "Sprite::render called in wrong context.", @
-
+  
   return unless @game
   @game.context.drawImage(
     @spritesheet,

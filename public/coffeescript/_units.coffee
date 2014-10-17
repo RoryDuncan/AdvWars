@@ -24,7 +24,7 @@ Unit::init = (options = {}) ->
   @visible = options.visibile or false
   @sprite = @game.Sprites[@name]
   @addToManagement(options.player)
-  @map = @game.currentMap.map
+  @map = @game.currentMap
   @offset = @map.tilegrid.offset
   @size = options.size or @map.tilegrid.dimensions.tilesize
   @zoom = @map.tilegrid.zoom
@@ -33,7 +33,7 @@ Unit::init = (options = {}) ->
   return extend @, options
 
 Unit::render = () ->
-  map = @game.currentMap.map
+  map = @map or @game.currentMap
   return unless map
   return unless @sprite
   return unless @visible
@@ -119,8 +119,8 @@ UnitManager::getUnitAtTile = () ->
 UnitManager::getUnitAt = (position) ->
 
   players = @get()
-  console.log players, position
-
+  #console.log players, position
+  result;
   for playername, index of players
     #console.log "getting player:", playername
     for unit, unitIndex in players[playername]
@@ -128,8 +128,10 @@ UnitManager::getUnitAt = (position) ->
       continue unless unit.visible is true
       if unit.position.x is position.x and unit.position.y is position.y
         #console.log "match with", unit
-        return unit
-  return false
+        result = unit
+        break;
+
+  return result
 
 
 

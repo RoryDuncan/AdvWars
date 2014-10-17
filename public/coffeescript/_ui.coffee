@@ -1,4 +1,5 @@
 utils =        require "./_utils"
+input =        require "./_input"
 extend =       utils.extend
 pixels =       utils.calculatePixelPosition
 EventEmitter = utils.EventEmitter
@@ -166,6 +167,7 @@ Menu = (@game, @id, options = {}) ->
   @position = {x:0, y:0}
   @active = 0
   @$el = $("##{@id}")
+  @map 
 
   # init actions
   @compile options.data if options.data
@@ -202,6 +204,7 @@ Menu::getPosition = () ->
   return {x, y}
 
 Menu::compile = (obj) ->
+  console.log obj
   @data = obj or @data or {}
   @names = []
   @active = @active or 0
@@ -221,7 +224,6 @@ Menu::compile = (obj) ->
   for key, value of @data
     continue if key is "length"  
     listItems += li.call @, key, @id
-    console.log typeof value, typeof value isnt "function"
     if typeof value isnt "function"
       @data[key] = @noop
     @names.push key
@@ -264,7 +266,6 @@ Menu::update = () ->
 
 Menu::render = (@selector) ->
   return @update() if @exists
-  return if @selector is undefined
   @html @selector
   @deferred.call(@)
   @deferred = @noop
@@ -336,13 +337,29 @@ Menu::selectedElement = () ->
   # return the current selected 
   return $("##{@id} li a.active")
 
-Menu::getInputBindings = () ->
+Menu::getActionBindings = () ->
   that = @
   return {
-    "keyup up":    that.prev.bind(that),
-    "keyup down":  that.next.bind(that),
-    "keyup enter":    that.select.bind(that)}
+    "keydown up":    that.prev.bind(that),
+    "keydown down":  that.next.bind(that),
+    "keydown enter":    that.select.bind(that)
+  }
 
+Menu::open = () ->
+  @trigger "open"
+  @render(@selector or ".menu").show()
+  console.log @
+  @profile_ = menuProfile_ = @profile_ or new input.InputProfile("menu-navigation", @game.inputHandler, @getActionBindings())
+  @profile_.enable()
+  
+  return @
+
+Menu::close = () ->
+  return unless @profile_
+  console.log "closing"
+  @profile_.disable()
+  @trigger "close"
+  @hide()
 module.exports.Menu = Menu
 
 

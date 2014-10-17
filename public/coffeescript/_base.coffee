@@ -1,5 +1,5 @@
 
-console.log "%cAdvanced Wars Clone", "color: #c88"
+console.log "%cAdvanced Wars Clone", "color: #b44"
 
 
 
@@ -32,7 +32,8 @@ Game = (@canvas, @width, @height) ->
   @Sprites = {}
   @maps = {}
   @inputHandler = new input.InputHandler(document)
-  @inputHandler.profiles = {}
+  # clone to @profiles for convenience
+  @profiles = @inputHandler.profiles = {}
   @clock = new Clock()
   @UnitManager = new UnitManager(@)
   @UI = new UI.Manager(@)
@@ -50,19 +51,65 @@ Game = (@canvas, @width, @height) ->
 
 extend Game::, EventEmitter::
 
+
+Game::initialize = () ->
+  console.group "Initializing"
+  that = @
+  left = 4
+  check = () ->
+    left--
+    if left is 0
+      console.log "%cGame is Initialized.", 'color:#4b4;'
+      that.trigger "initialize"
+      console.groupEnd "Initializing"
+      
+
+
+  @loadAllImages().then ->
+    check()
+    that.loadUnitData("./json/units.json").then ->
+      console.log "%cAsynchronously loaded unit data.", "color: #808"
+      check()
+      return
+    that.getSpriteListJSON("./json/spritelist.json").then ->
+      check()
+
+      return
+    that.getMapFromUrl("./json/testmap.json").then ->
+      check()
+    return
+
+
+  return @
+
+Game::loadAllImages = () ->
+  that = @
+  promise = {then: (x) ->
+    @then = x
+  }
+
+  # need to promise the tits out of this
+  loader = new utils.ImageLoader ["./sprites/spritesheet.png"],  (loadedArray) ->
+    that.Sprites.spritesheet = loadedArray[0]
+    promise.then.call(null)
+  return promise
+
+Game::loadUnitData = (url) ->
+  promise = $.getJSON url
+  return promise
+
 Game::start = (mode) ->
   console.log "Starting..."
   @clock.start()
   # if mode is "game" / "mapeditor" etc
   that = @
+  map = @currentMap
 
-  @currentMap.map.play.call(@currentMap.map)
-  #introduce the map panning profile
 
-  mapPanning = @currentMap.map.panningBindings.call(@currentMap.map)
-  mapPanProfile = new input.InputProfile("map-panning", @inputHandler, mapPanning)
-  mapPanProfile.enable()
+  map.play.call(map)
 
+
+  ### TESTING  FUNCTIONALITY ###
   # Unit
 
   console.groupCollapsed "%cUnit Object Test", "text-decoration: underline"
@@ -71,32 +118,14 @@ Game::start = (mode) ->
   console.log testUnit
   console.groupEnd "%cUnit Object Test", "text-decoration: underline"
 
-
   # User Interface
 
   console.group "%cUserInterface Test", "text-decoration: underline"
 
   d = @UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show()
   console.log d
-  d.relativeTo( @currentMap.map.selector )
-  menuAction = (x) ->
-    console.log "#{x} was called."
+  d.relativeTo( @currentMap.selector )
 
-  menu = @UI.Menu "test",
-    "data": 
-      "test": menuAction,
-      "test2": null,
-      "test3" : menuAction,
-      "close"   : menuAction
-
-  menu.render(".menu")
-
-  menuNavigate = menu.getInputBindings()
-  menuProfile = new input.InputProfile("menu-navigation", @inputHandler, menuNavigate)
-  mapPanProfile.disable()
-  menuProfile.enable()
-
-  console.log menu
   console.groupEnd "%cUserInterface Test", "text-decoration: underline"
 
 Game::pause = () ->
@@ -121,7 +150,7 @@ Game::loadMap = (name) ->
     console.log "Map '#{name}' wasn't found."
     return
 
-  @currentMap = {name, map: @maps[name]}
+  @currentMap = @maps[name]
   map = @maps[name]
 
   @Layers.add 
@@ -145,7 +174,7 @@ Game::getSpriteListJSON = (url, callback) ->
   promise = $.getJSON url
 
   promise.then (responseText) ->
-
+    console.log "%cLoaded spritelist data.", 'color:#808'
     that.Sprites._list = responseText
     that._createSpriteList.call that, responseText
 
@@ -162,8 +191,7 @@ Game::_createSpriteList = (spritelist, callback) ->
 
     key = name + (i or "")
     s = @Sprites.spritesheet
-    style = "font-weight: 600;"
-    console.groupCollapsed "%c#{key}", style
+    console.groupCollapsed "#{key}"
     list[key] = new Sprite s, {x:o.x, y:o.y, w:o.w, h:o.h}, context
     list[key].name = key
     console.log list[key]
@@ -171,9 +199,9 @@ Game::_createSpriteList = (spritelist, callback) ->
     # run a quick test. if the sprite doesn't render it needs help
     list[key].render {x:1, y: 1}
     console.log "Adding Sprite for '#{key}'"
-    console.groupEnd "%c#{key}", style
+    console.groupEnd "%c#{key}"
 
-  console.groupCollapsed "%cCreating Sprites From JSON data", "color: #0b7"
+  console.groupCollapsed "%cCreating Sprites From JSON data", "color: #808"
 
   for key, item of spritelist
     
@@ -199,6 +227,11 @@ Game::_createMap = (mapData) ->
   @maps[name] = new mapUtils.Map(name, tilegrid, @)
 
 
+
+
+
+
+
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ #
 ###                      @TESTING                           ###
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ #
@@ -208,35 +241,20 @@ Game::_createMap = (mapData) ->
 
 
 
+
+
 canvas = document.getElementById("game")
 game = new Game(canvas);
+
 Sprite::game = game
 Sprite::ctx = game.context
 
 console.log game
+ # then -> 
+
+game.initialize()
+game.on "initialize", ->
+  game.loadMap "testmap"
 game.on "ready", game.start, game
 
-finishedLoadingImages = (loadedImages) ->
-  game.Sprites.spritesheet = loadedImages[0]
-  spritelistPromise = game.getSpriteListJSON "./json/spritelist.json"
-  mapPromise = null
-  spritelistPromise.then (e) ->
-
-    mapPromise = game.getMapFromUrl "./json/testmap.json"
-    mapPromise.then () ->
-      game.loadMap "testmap"
-  return
-
-# need to promise the tits out of this
-loader = new utils.ImageLoader ["./sprites/spritesheet.png"], finishedLoadingImages
-
-
-###
-
-  movementAmount = 1
-  
-
-
-
-###
 

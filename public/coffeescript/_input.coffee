@@ -4,9 +4,9 @@ utils = require "./_utils"
 consoleColor = "color:#8b8"
 
 
-module.exports.InputHandler = (el) ->
+InputHandler = (el) ->
   return unless $
-
+  @profiles = {}
   $el = $(el)
   # the relevent e.which keys, hashed
 
@@ -114,14 +114,14 @@ module.exports.InputHandler = (el) ->
   handler = (e) ->
     
     #e.position = utils.getMousePosition(e)
-
     b = bound[e.type]
+    #console.log "event options:", b
+    #console.log "key pressed:", e.which
     return unless b
-
     for keyname of b
       if key[keyname] is e.which
         e.preventDefault()
-        
+        #console.log "calling #{keyname}"
         b[keyname].callback.call( b[keyname], e, b[keyname] )
         return
 
@@ -152,8 +152,9 @@ module.exports.InputHandler = (el) ->
       # needs to not trigger on() everytime an event is added,
       # it should check to see if bound[eventType] exists, if it does, assume an on()
       # has been set for that event
-      if bound[eventType]
+      if bound[eventType] isnt undefined
         bound[eventType][keyname] = {callback, data, scope: (data or {}).scope}
+        console.log "%cAdding key('#{keyname}') to #{eventType}. Event Listener exists prior.", consoleColor
       else
         bound[eventType] = {}
         bound[eventType][keyname] = { callback, data, scope: (data or {}).scope}
@@ -167,10 +168,15 @@ module.exports.InputHandler = (el) ->
   @off = (events, keyname) ->
 
     _events = events.split(" ")
-
+    #console.log "bound", bound
+    console.log "OFFING BITCHES ->"#, events
     for eventType in _events
-      $el.off eventType, handler
+
       delete bound[eventType][keyname]
+      keys = utils.count( bound[eventType] )
+      if keys is 0
+        $el.off(eventType, handler)
+      
     return @
 
   @trigger = (event) ->
@@ -178,6 +184,12 @@ module.exports.InputHandler = (el) ->
     return bound[event]
 
   return @
+
+InputHandler::getProfile = (name) ->
+  return @profiles[name]
+
+
+module.exports.InputHandler = InputHandler
 
 
 ###
@@ -209,7 +221,7 @@ InputProfile::multipleInputActions = (inputMethod) ->
 
     eventdetails = key.split " "
     eventdetails = key if eventdetails.length is 1
-    @inputHandler[inputMethod] eventdetails[0], eventdetails[1], value
+    @inputHandler[inputMethod].call @inputHandler, eventdetails[0], eventdetails[1], value
 
   # then deal with any combined actions via recursion
   for inputProf in @_combined
@@ -224,9 +236,11 @@ InputProfile::toggle = () ->
     @enable()
 
 InputProfile::enable = () ->
+  #console.log @
   @multipleInputActions "on"
 
 InputProfile::disable = () ->
+  console.log @
   @multipleInputActions "off"
 
 InputProfile::add = (inputProf) ->
@@ -240,5 +254,23 @@ InputProfile::remove = (inputProfname) ->
   item.multipleInputActions "off"
   delete @_combined[index]
   return item
+
+InputProfile::switchTo = (profileNameOrObject) ->
+  @disable()
+  console.log "wow", profileNameOrObject.name, "switching from", @name, "unwow"
+
+  if typeof profileNameOrObject is "string"
+
+    p = @inputHandler.profiles[profileNameOrObject]
+    console.log "p", p
+    p.enable.call(p)
+    return p
+
+  else if typeof profileNameOrObject is "object"
+
+    profileNameOrObject.enable.call(profileNameOrObject)
+    return profileNameOrObject
+
+  else return null
 
 module.exports.InputProfile = InputProfile

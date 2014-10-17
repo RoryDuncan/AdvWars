@@ -1,4 +1,4 @@
-@import url(http://fonts.googleapis.com/css?family=Lato:300,400,700);
+/* @import url(http://fonts.googleapis.com/css?family=Lato:300,400,700); */
 
 
 body {
@@ -22,6 +22,9 @@ body {
   font-size: 16px;
 }
 
+.menu {
+  position: fixed;
+}
 .list {
   font-size: 16px;
   line-height: 10px;
@@ -56,6 +59,6 @@ body {
 }
 .list ul li a.active {
   text-shadow: 0px 1px 1px #8f8;
-  background-color: #fafafa;
-  color: #26f;
+  background-color: #b44;
+  color: #fff ; /*#26f;*/
 }

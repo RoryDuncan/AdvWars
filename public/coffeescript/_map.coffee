@@ -1,9 +1,9 @@
-
-
-utils = require "./_utils"
-extend = utils.extend
-pixels = utils.calculatePixelPosition
-input = require "./_input"
+utils    = require "./_utils"
+extend   = utils.extend
+pixels   = utils.calculatePixelPosition
+input    = require "./_input"
+UI       = require "./_ui"
+Unit     = require("./_units").Unit
 
 
 
@@ -129,6 +129,11 @@ Map::drawBackground = () ->
   game = @game
   ctx = game.context
 
+  #basic render
+
+  ctx.fillStyle = "#6393d8"
+  ctx.fillRect 0, 0, @game.canvas.width, @game.canvas.height
+  ###
   #styles
   lineWidth = game.canvas.width / (lines)
   lineColor =  @backgroundColor2 or "#6393d8"
@@ -168,13 +173,15 @@ Map::drawBackground = () ->
   # restorations
   ctx.globalAlpha = 1
   ctx.strokeStyle = previousStroke
+  ###
 
-Map::panningBindings = () ->
+Map::getActionBindings = () ->
+  that = @
   return {
-    "keydown numpad8": (@up).bind(@),
-    "keydown numpad2": (@down).bind(@),
-    "keydown numpad4": (@left).bind(@),
-    "keydown numpad6": (@right).bind(@)
+    "keydown numpad8": (that.up).bind(that),
+    "keydown numpad2": (that.down).bind(that),
+    "keydown numpad4": (that.left).bind(that),
+    "keydown numpad6": (that.right).bind(that)
   }
 Map::move = (x = 1,y = 1) ->
   @tilegrid.move x,y
@@ -194,18 +201,29 @@ Map::right = () ->
 Map::play = () ->
   console.log "Playing #{@name}!"
   # the selector instance
-  selector = new Selector @game, @, "select"
-
+  @selector = selector = new Selector @game, @, "select"
   # the profile that keeps track of movement is initialised, and enabled
-  selectorPanProfile = new input.InputProfile "selector-panning", @game.inputHandler, selector.movementActionBindings()
-  selectorPanProfile.enable();
-  # then
+  @selector.inputProfile_ = new input.InputProfile "selector-panning", @game.inputHandler, @selector.getActionBindings()
+  @selector.inputProfile_.enable()
 
+
+
+  #the profile that keeps track of panning the map is initialised and enabled
+  mapActionBindings = @getActionBindings()
+  @mapPanningProfile_ = new input.InputProfile("map-panning", @game.inputHandler, mapActionBindings)
+  @mapPanningProfile_.enable()
+
+  # then, add the selector to the render loop
   @game.Layers.add.call @game, 
     name: "selector",
     layer: 6,
     fn:  selector.render,
     scope: selector
+
+Map::disableMapKeys = () ->
+  @selectorActionProfile_.disable()
+  @mapPanningProfile_.disable()
+  return @
 
 Map::edit = () ->
   console.log "Editing #{@name}!"
@@ -222,24 +240,52 @@ Selector = (@game, @map, @type = "select") ->
   @Sprites = @game.Sprites
   @centerIndex = @map.centerIndex
   # has it's own array to keep track of positioning
-  @grid = utils.generateNormalizedGrid @map.tilegrid.dimensions.width, @map.tilegrid.dimensions.height
+  @grid = @map.tilegrid.tiles
   
-  src = @grid[ @centerIndex ]
+  src = @grid[ @centerIndex ].position
   @position = extend {}, src
 
   @map.selector = @
+  @menu = new UI.Menu @game, "selector-actions"
 
   return @
 
+Selector::select = () ->
 
-Selector::getGameObjectsHere = (p) ->
+  selected = @getGameObjectsHere()
+
+  if selected[0] instanceof Unit
+    # console.clear()
+    console.log selected[0]
+    @menu.on "open", @inputProfile_.disable.bind(@inputProfile_)
+    @menu.on "close", @inputProfile_.enable.bind(@inputProfile_)
+    @menu.compile @unitActions()
+    @menu.open()
+
+Selector::unitActions = () ->
+  that = @
+  return {
+    "move":    utils.noop,
+    "attack":  utils.noop,
+    "info":    utils.noop,
+    "close":   that.menu.close
+
+  }
+
+Selector::getGameObjectsHere = () ->
 
   # get units,
   # if none, get buildings(todo)
   # if none, then
   # get the tile at that position.
-
-  selected = @getUnitAt(@position) or @getTile()
+  selected = []
+  unit = @getUnitAt(@position)  # get the unit
+  tile = @getTile()             # get the tile
+  
+  if unit then selected.push unit
+  if tile is undefined then throw new Error "Selector Grabbed Out of Bounds"
+  selected.push tile
+  #console.log "%cSELECTED:", "color: #4b4", selected, selected.length
   return selected
 
 Selector::getIndexOf = (position = {x:0, y:0, id:0}) ->
@@ -301,13 +347,16 @@ Selector::move = (x, y) ->
   @position.y += y
   return
 
-Selector::movementActionBindings = () ->
+Selector::getActionBindings = () ->
+  that = @
   return {
-    "keydown up": @moveUp.bind(@),
-    "keydown down": @moveDown.bind(@),
-    "keydown left": @moveLeft.bind(@),
-    "keydown right": @moveRight.bind(@)
+    "keydown up":     @moveUp.bind(that),
+    "keydown down":   @moveDown.bind(that),
+    "keydown left":   @moveLeft.bind(that),
+    "keydown right":  @moveRight.bind(that),
+    "keydown enter":  @select.bind(that)
   }
+
 
 Selector::moveUp = () ->
   p = @position

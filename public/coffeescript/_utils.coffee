@@ -68,15 +68,13 @@ module.exports.extend = extend = (extended, objs...) ->
 
 module.exports.ImageLoader = class ImageLoader extends EventEmitter
 
-  constructor: (items, callback, individualFileCallback) ->
+  constructor: (items, done, individualFileCallback) ->
     return unless items
     startTime = Date.now()
     count = 0
     total = items.length
     results = []
     filetype = @filetype
-    console.groupCollapsed "%cLoading Images.", "color: #0b7"
-    console.log "%cProgress: 0%", "color:#ccc"
 
     load = (path) ->
       i = new window[filetype]()
@@ -86,22 +84,18 @@ module.exports.ImageLoader = class ImageLoader extends EventEmitter
 
     finished = (e) ->
       @duration = Date.now() - startTime
-      console.log "%c#{total} Images Loaded. Time Elapsed: " + @duration + " milliseconds.", "color: #800"
-
       @results = results
-      console.groupEnd "%cLoading Images.", "color: #0b7"
-      callback.call(@, results) if callback
+      done.call(@, results) if done
 
     itemDone = (e) ->
       count++
+      console.log "%cLoaded #{filetype} #{count} of #{total}", "color: #808"
       percentage = 100 / (total / count) + "%"
-      console.log "%cProgress: #{percentage}", "color:#ccc"
       individualFileCallback.call(@, e) if individualFileCallback
       finished() if count is total 
 
     @on "itemDone", itemDone
     @on "done", finished
-
 
     items.forEach load
   
@@ -132,6 +126,15 @@ module.exports.isEven = (n) ->
   return if n % 2 is 0 then true else false 
 module.exports.has = (obj, key) ->
   return Object.hasOwnProperty.call(obj, key)
+
+module.exports.count = (obj) ->
+  count = 0
+  count++ for k of obj
+
+  return count
+
+module.exports.noop = () ->
+  return
 
 UIDgroups = {};
 module.exports.generateUID =
