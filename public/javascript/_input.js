@@ -149,7 +149,6 @@ InputHandler = function(el) {
           data: data,
           scope: (data || {}).scope
         };
-        console.log("%cAdding key('" + keyname + "') to " + eventType + ". Event Listener exists prior.", consoleColor);
       } else {
         bound[eventType] = {};
         bound[eventType][keyname] = {
@@ -158,7 +157,6 @@ InputHandler = function(el) {
           scope: (data || {}).scope
         };
         $el.on(eventType, handler);
-        console.log("%cAssigning new key('" + keyname + "') to " + eventType + " and adding an Event Listener.", consoleColor);
       }
     }
     return this;
@@ -166,7 +164,6 @@ InputHandler = function(el) {
   this.unbind = this.off = function(events, keyname) {
     var eventType, keys, _events, _i, _len;
     _events = events.split(" ");
-    console.log("OFFING BITCHES ->");
     for (_i = 0, _len = _events.length; _i < _len; _i++) {
       eventType = _events[_i];
       delete bound[eventType][keyname];

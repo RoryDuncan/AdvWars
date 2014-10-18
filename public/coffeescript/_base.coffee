@@ -15,7 +15,8 @@ mapUtils = require      "./_map"
 input = require         "./_input"
 Clock = require         "./_clock"
 $ = require             "jquery"
-UI = require           "./_ui"
+UI = require            "./_ui"
+Player = require(        "./_players").Player
 
 Game = (@canvas, @width, @height) ->
   
@@ -32,11 +33,13 @@ Game = (@canvas, @width, @height) ->
   @Sprites = {}
   @maps = {}
   @inputHandler = new input.InputHandler(document)
+
   # clone to @profiles for convenience
   @profiles = @inputHandler.profiles = {}
   @clock = new Clock()
   @UnitManager = new UnitManager(@)
   @UI = new UI.Manager(@)
+  @players = []
 
 
   # internal render loop
@@ -67,13 +70,13 @@ Game::initialize = () ->
 
   @loadAllImages().then ->
     check()
-    that.loadUnitData("./json/units.json").then ->
+    that.loadUnitData("./json/units.json").then (unitData) ->
       console.log "%cAsynchronously loaded unit data.", "color: #808"
+      that.UnitManager.data = unitData
       check()
       return
     that.getSpriteListJSON("./json/spritelist.json").then ->
       check()
-
       return
     that.getMapFromUrl("./json/testmap.json").then ->
       check()
@@ -98,27 +101,39 @@ Game::loadUnitData = (url) ->
   promise = $.getJSON url
   return promise
 
+Game::getPlayerCount = () ->
+  playerCount = 1 #window.prompt "How many players?"
+
+  for i in [0...playerCount]
+    player = new Player(@, "Player#{i}", [])
+    @UnitManager.addPlayer player
+
 Game::start = (mode) ->
   console.log "Starting..."
   @clock.start()
   # if mode is "game" / "mapeditor" etc
+
   that = @
   map = @currentMap
-
+  @getPlayerCount()
 
   map.play.call(map)
 
 
   ### TESTING  FUNCTIONALITY ###
-  # Unit
+
+  # Unit functionality
 
   console.groupCollapsed "%cUnit Object Test", "text-decoration: underline"
   console.log @UnitManager
-  testUnit = new Unit(@, "soldier").show()
+
+  testUnit = @UnitManager.create("soldier")
+  testUnit.show()
   console.log testUnit
+
   console.groupEnd "%cUnit Object Test", "text-decoration: underline"
 
-  # User Interface
+  # User Interface functionality
 
   console.group "%cUserInterface Test", "text-decoration: underline"
 

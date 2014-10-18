@@ -445,7 +445,6 @@ Menu.prototype.open = function() {
   var menuProfile_;
   this.trigger("open");
   this.render(this.selector || ".menu").show();
-  console.log(this);
   this.profile_ = menuProfile_ = this.profile_ || new input.InputProfile("menu-navigation", this.game.inputHandler, this.getActionBindings());
   this.profile_.enable();
   return this;

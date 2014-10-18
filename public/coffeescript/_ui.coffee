@@ -348,7 +348,7 @@ Menu::getActionBindings = () ->
 Menu::open = () ->
   @trigger "open"
   @render(@selector or ".menu").show()
-  console.log @
+  #console.log @
   @profile_ = menuProfile_ = @profile_ or new input.InputProfile("menu-navigation", @game.inputHandler, @getActionBindings())
   @profile_.enable()
   

@@ -154,12 +154,12 @@ InputHandler = (el) ->
       # has been set for that event
       if bound[eventType] isnt undefined
         bound[eventType][keyname] = {callback, data, scope: (data or {}).scope}
-        console.log "%cAdding key('#{keyname}') to #{eventType}. Event Listener exists prior.", consoleColor
+        #console.log "%cAdding key('#{keyname}') to #{eventType}. Event Listener exists prior.", consoleColor
       else
         bound[eventType] = {}
         bound[eventType][keyname] = { callback, data, scope: (data or {}).scope}
         $el.on eventType, handler
-        console.log "%cAssigning new key('#{keyname}') to #{eventType} and adding an Event Listener.", consoleColor
+        #console.log "%cAssigning new key('#{keyname}') to #{eventType} and adding an Event Listener.", consoleColor
       
 
     return @
@@ -169,7 +169,7 @@ InputHandler = (el) ->
 
     _events = events.split(" ")
     #console.log "bound", bound
-    console.log "OFFING BITCHES ->"#, events
+    #console.log "OFFING BITCHES ->"#, events
     for eventType in _events
 
       delete bound[eventType][keyname]

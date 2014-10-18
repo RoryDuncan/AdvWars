@@ -33,7 +33,6 @@ Unit.prototype.init = function(options) {
   this.id = utils.UID("units", true);
   this.visible = options.visibile || false;
   this.sprite = this.game.Sprites[this.name];
-  this.addToManagement(options.player);
   this.map = this.game.currentMap;
   this.offset = this.map.tilegrid.offset;
   this.size = options.size || this.map.tilegrid.dimensions.tilesize;
@@ -84,28 +83,25 @@ Unit.prototype.addToManagement = function(player) {
 
 module.exports.Unit = Unit;
 
-UnitManager = function(game, currentPlayer, otherPlayers) {
-  var currentPlayerArmy, players;
+UnitManager = function(game) {
+  var cpi, players;
   this.game = game;
-  this.currentPlayer = currentPlayer != null ? currentPlayer : "player1";
-  if (otherPlayers == null) {
-    otherPlayers = [];
-  }
-  this.players = players = {};
-  currentPlayerArmy = players[this.currentPlayer] = [];
-  otherPlayers.forEach(function(name) {
-    return players[name] = [];
-  });
-  this.addUnit = function(Unit, player) {
-    if (player === void 0 || player === this.currentPlayer) {
-      currentPlayerArmy.push(Unit);
+  this.currentPlayerIndex = cpi = 0;
+  players = [];
+  this.addUnit = function(Unit, playerIndex) {
+    if (playerIndex === void 0 || playerIndex === cpi) {
+      players[cpi].units.push(Unit);
     } else {
-      players[player].push(Unit);
+      players[playerIndex].units.push(Unit);
     }
     return Unit;
   };
   this.get = function() {
     return players;
+  };
+  this.addPlayer = function(PlayerObject) {
+    console.log("hello");
+    return players.push(PlayerObject);
   };
   this.game.Layers.add({
     name: "units",
@@ -129,9 +125,11 @@ UnitManager.prototype.getUnitAtTile = function() {};
 UnitManager.prototype.getUnitAt = function(position) {
   var index, playername, players, result, unit, unitIndex, _i, _len, _ref;
   players = this.get();
+  console.log(players);
   result;
   for (playername in players) {
     index = players[playername];
+    console.log("getting player:", playername, index);
     _ref = players[playername];
     for (unitIndex = _i = 0, _len = _ref.length; _i < _len; unitIndex = ++_i) {
       unit = _ref[unitIndex];
@@ -151,25 +149,38 @@ UnitManager.prototype.reset = function() {
   var players;
   players = this.get();
   return player.forEach(function(el) {
-    return el = [];
+    return player.units = [];
   });
 };
 
-UnitManager.prototype.set = function() {
-  return console.log("todo");
-};
-
 UnitManager.prototype.render = function() {
-  var army, player, players, _results;
+  var player, players, _i, _len, _results;
   players = this.get();
   _results = [];
-  for (player in players) {
-    army = players[player];
-    _results.push(army.forEach(function(unit) {
+  for (_i = 0, _len = players.length; _i < _len; _i++) {
+    player = players[_i];
+    _results.push(player.units.forEach(function(unit) {
       return unit.render();
     }));
   }
   return _results;
+};
+
+UnitManager.prototype.create = function(type, position, player) {
+  var unit;
+  if (position == null) {
+    position = {
+      x: 0,
+      y: 0
+    };
+  }
+  if (!(this.data && this.data[type])) {
+    return;
+  }
+  unit = new Unit(this.game, type, position, this.data[type]);
+  unit.addToManagement(player);
+  console.log(unit);
+  return unit;
 };
 
 module.exports.UnitManager = UnitManager;

@@ -23,7 +23,7 @@ Unit::init = (options = {}) ->
   @id = utils.UID("units", true)
   @visible = options.visibile or false
   @sprite = @game.Sprites[@name]
-  @addToManagement(options.player)
+  #@addToManagement(options.player)
   @map = @game.currentMap
   @offset = @map.tilegrid.offset
   @size = options.size or @map.tilegrid.dimensions.tilesize
@@ -73,24 +73,23 @@ Unit::addToManagement = (player) ->
 module.exports.Unit = Unit
 
 
-UnitManager = (@game, @currentPlayer = "player1", otherPlayers = []) ->
-
-  @players = players = {}
-  currentPlayerArmy = players[@currentPlayer] = []
-
-  otherPlayers.forEach (name) ->
-    players[name] = []
-
-  @addUnit = (Unit, player) ->
+UnitManager = (@game) ->
+  @currentPlayerIndex = cpi = 0
+  players = []
+  @addUnit = (Unit, playerIndex) ->
     # later this might be replaced with an AJAX
     # and handled by the server
-    if player is undefined or player is @currentPlayer
-      currentPlayerArmy.push Unit
-    else players[player].push Unit
+    if playerIndex is undefined or playerIndex is cpi
+      players[cpi].units.push Unit
+    else players[playerIndex].units.push Unit
     return Unit
 
   @get = () ->
     return players
+
+  @addPlayer = (PlayerObject) ->
+    console.log "hello"
+    players.push PlayerObject
 
   # initialize for rendering
   @game.Layers.add 
@@ -103,6 +102,8 @@ UnitManager = (@game, @currentPlayer = "player1", otherPlayers = []) ->
   return @
 
 extend UnitManager::, EventEmitter::
+
+  
 
 UnitManager::isTileTaken = () ->
   # todo
@@ -119,10 +120,11 @@ UnitManager::getUnitAtTile = () ->
 UnitManager::getUnitAt = (position) ->
 
   players = @get()
-  #console.log players, position
+  console.log players #, position
   result;
+
   for playername, index of players
-    #console.log "getting player:", playername
+    console.log "getting player:", playername, index
     for unit, unitIndex in players[playername]
       #console.log "getting unit:", unit
       continue unless unit.visible is true
@@ -133,24 +135,25 @@ UnitManager::getUnitAt = (position) ->
 
   return result
 
-
-
 UnitManager::reset = () ->
   players = @get()
   player.forEach (el) ->
-    el = []
-
-UnitManager::set = () ->
-  console.log "todo"
+    player.units = []
 
 UnitManager::render = () ->
 
   players = @get()
-  for player of players
-
-    army = players[player]
-    army.forEach (unit) ->
+  for player in players
+    player.units.forEach (unit) ->
       unit.render()
+
+UnitManager::create = (type, position = {x:0, y:0}, player) ->
+  return unless @data and @data[type]
+  unit = new Unit @game, type, position, @data[type]
+  unit.addToManagement(player)
+  console.log unit
+
+  return unit
 
 
 
