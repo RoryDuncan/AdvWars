@@ -5,13 +5,11 @@ input    = require "./_input"
 UI       = require "./_ui"
 Unit     = require("./_units").Unit
 
-
-
 Tile  = (@game, @name, @position, @size, @grid) ->
 
   @Sprites = @game.Sprites
   @name = @name or "plain"
-
+  @highlight = false
   return @
 
 Tile::render = () ->
@@ -19,22 +17,48 @@ Tile::render = () ->
   sprite = @Sprites[@name]
   return unless sprite
 
+
+
   size = @size # width and height of the tile
   zoom = @grid.zoom # zoom modifier
 
   #offsets
   xo = ( @grid.offset.x * size )
   yo = ( @grid.offset.y * size )
-
+  return if xo < 0 or yo < 0
   #positions
   xp = ( @position.x * size )
   yp = ( @position.y * size )
 
   # widths (with fillRect / strokeRect it is the x and y coordinates on the canvas)
-  xw = (xo + size + xp) * zoom
-  yw = (yo + size + yp) * zoom
+  #xw = (xo + size + xp) * zoom
+  #yw = (yo + size + yp) * zoom
+  
   sprite.render.call(sprite, (xp + xo), (yp + yo), size, size, zoom)
   #@showPosition(xp, xo, yp, yo, size, zoom)
+
+  # center
+  context = @game.context
+  context.fillRect window.innerWidth/2, window.innerHeight/2, size, size
+
+
+  return unless @highlight
+
+  context = @game.context
+  old_style = context.fillStyle
+  context.globalAlpha = 0.55
+  context.fillStyle = '#f26'
+  context.strokeStyle = "#911"
+  context.lineWidth = 1
+  context.fillRect xp + xo+1 , yp + yo+1, size-2*zoom, size-2*zoom
+  #context.strokeRect xp + xo , yp + yo, size*zoom, size*zoom
+  context.fillStyle = old_style
+  context.globalAlpha = 1
+
+Tile::distanceFrom = (x, y) ->
+  X = Math.abs(@position.x - x, 2)
+  Y = Math.abs(@position.y - y, 2)
+  return Math.floor(X + Y)
 
 Tile::showPosition = (xp, xo, yp, yo, size, zoom) ->
   @game.context.font = "#{size/4}px Helvetica";
@@ -74,11 +98,18 @@ TileGrid = (@game, @data, @dimensions) ->
 
   @offset = {}
   @offset.origin = {}
-  @offset.x = @offset.origin.x = ~~(width) 
-  @offset.y = @offset.origin.y = ~~(height) 
+  # center
+  @offset.x = @offset.origin.x = ~~(window.innerWidth / (2*tilesize) )
+  @offset.y = @offset.origin.y = ~~(window.innerHeight / (2*tilesize) )
   @zoom = 1
 
   return @
+
+TileGrid::filter = (fn) ->
+  # extend filtering to the tilegrid
+  return @tiles.filter fn
+
+TileGrid::centerOnScreen = (x, y) ->
 
 
 TileGrid::setZoom = (zoom = 1) ->
@@ -93,8 +124,8 @@ TileGrid::move = (x = 0, y = 0) ->
   @render()
 
 TileGrid::AlignToOrigin = () ->
-  @offset.origin.x = @offset.origin.x
-  @offset.origin.y = @offset.origin.y
+  @offset.x = @offset.origin.x
+  @offset.y = @offset.origin.y
   return
 
 
@@ -103,7 +134,6 @@ TileGrid::changeTile = (x,y, tilename) ->
   console.log "wow"
 
 TileGrid::render = () ->
-
   @tiles.forEach (tile) ->
       tile.render.call(tile)
 
@@ -113,7 +143,6 @@ module.exports.TileGrid = TileGrid
 # Map is a wrapper object
 
 Map = (@name, @tilegrid, @game, @backgroundColor = "#476ca1") ->
-  
   @centerIndex = @tilegrid.centerIndex
 
   return @
@@ -124,6 +153,7 @@ Map::render = () ->
 
 currentRadian = 0;
 lines = 90
+
 Map::drawBackground = () ->
   
   game = @game
@@ -262,7 +292,7 @@ Selector::select = () ->
     @menu.compile @unitActions()
     @menu.open()
 
-Selector::unitActions = () ->
+Selector::PlayerOwnedUnitActions = () ->
   that = @
   return {
     "move":    utils.noop,
@@ -271,7 +301,6 @@ Selector::unitActions = () ->
     "close":   that.menu.close
 
   }
-
 Selector::getGameObjectsHere = () ->
 
   # get units,
@@ -311,12 +340,15 @@ Selector::getUnitAt = (position) ->
 
 Selector::isOutOfBounds = (move = true) ->
   
+  # move refers to if the screen should move and follow the selector
   # move and non-move version can probably be seperated
   outOfBounds = false
   tg = @map.tilegrid
   dimensions = pixels( tg.dimensions.tilesize, @position, tg.offset, tg.zoom )
   amount = 2
+
   if move 
+
     if dimensions.x < 0
       @map.move.call(@map, amount, 0)
       isOutOfBounds = true
@@ -329,7 +361,9 @@ Selector::isOutOfBounds = (move = true) ->
     else if dimensions.endy > window.innerHeight
       @map.move.call(@map, 0, -amount)
       isOutOfBounds = true
+
   else
+
     if dimensions.x < 0
       return true
     else if dimensions.endx > window.innerWidth
@@ -380,13 +414,41 @@ Selector::moveRight = () ->
 
 Selector::render = () ->
   # line size
-  ls = 1
+  ls = 2
 
   tg = @map.tilegrid
-  dimensions = pixels( tg.dimensions.tilesize, @position, tg.offset, tg.zoom )
+  dimensions = d =  pixels( tg.dimensions.tilesize, @position, tg.offset, tg.zoom )
   ctx = @game.context
+  ctx.globalAlpha = 1
   ctx.strokeStyle = @color or "#eee"
   ctx.lineWidth = ls
-  ctx.strokeRect dimensions.x - ls, dimensions.y - ls, dimensions.size + ls, dimensions.size + ls
+
+  # third refers to 1/3 of the size of a tile
+  q = dimensions.size * 0.25
+  ctx.beginPath()
+
+  # top left corner
+  ctx.moveTo(d.x, d.y + q)
+  ctx.lineTo(d.x, d.y)
+  ctx.lineTo(d.x+q, d.y)
+
+  # top right corner
+  ctx.moveTo(d.endx-q, d.endy-d.size)
+  ctx.lineTo(d.endx, d.endy-d.size)
+  ctx.lineTo(d.endx, d.endy-d.size + q)
+
+  # bottom left corner
+  ctx.moveTo(d.x, d.endy-q)
+  ctx.lineTo(d.x, d.endy)
+  ctx.lineTo(d.x+q, d.endy)
+
+  # bottom right corner
+  ctx.moveTo(d.endx-q, d.endy)
+  ctx.lineTo(d.endx, d.endy)
+  ctx.lineTo(d.endx, d.endy-q)
+
+
+  ctx.stroke()
 
 module.exports.Selector = Selector
+

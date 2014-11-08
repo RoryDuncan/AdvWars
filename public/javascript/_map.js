@@ -21,11 +21,12 @@ Tile = function(game, name, position, size, grid) {
   this.grid = grid;
   this.Sprites = this.game.Sprites;
   this.name = this.name || "plain";
+  this.highlight = false;
   return this;
 };
 
 Tile.prototype.render = function() {
-  var size, sprite, xo, xp, xw, yo, yp, yw, zoom;
+  var context, old_style, size, sprite, xo, xp, yo, yp, zoom;
   sprite = this.Sprites[this.name];
   if (!sprite) {
     return;
@@ -34,11 +35,33 @@ Tile.prototype.render = function() {
   zoom = this.grid.zoom;
   xo = this.grid.offset.x * size;
   yo = this.grid.offset.y * size;
+  if (xo < 0 || yo < 0) {
+    return;
+  }
   xp = this.position.x * size;
   yp = this.position.y * size;
-  xw = (xo + size + xp) * zoom;
-  yw = (yo + size + yp) * zoom;
-  return sprite.render.call(sprite, xp + xo, yp + yo, size, size, zoom);
+  sprite.render.call(sprite, xp + xo, yp + yo, size, size, zoom);
+  context = this.game.context;
+  context.fillRect(window.innerWidth / 2, window.innerHeight / 2, size, size);
+  if (!this.highlight) {
+    return;
+  }
+  context = this.game.context;
+  old_style = context.fillStyle;
+  context.globalAlpha = 0.55;
+  context.fillStyle = '#f26';
+  context.strokeStyle = "#911";
+  context.lineWidth = 1;
+  context.fillRect(xp + xo + 1, yp + yo + 1, size - 2 * zoom, size - 2 * zoom);
+  context.fillStyle = old_style;
+  return context.globalAlpha = 1;
+};
+
+Tile.prototype.distanceFrom = function(x, y) {
+  var X, Y;
+  X = Math.abs(this.position.x - x, 2);
+  Y = Math.abs(this.position.y - y, 2);
+  return Math.floor(X + Y);
 };
 
 Tile.prototype.showPosition = function(xp, xo, yp, yo, size, zoom) {
@@ -78,11 +101,17 @@ TileGrid = function(game, data, dimensions) {
   utils.generateNormalizedGrid(width, height, createTiles, this);
   this.offset = {};
   this.offset.origin = {};
-  this.offset.x = this.offset.origin.x = ~~width;
-  this.offset.y = this.offset.origin.y = ~~height;
+  this.offset.x = this.offset.origin.x = ~~(window.innerWidth / (2 * tilesize));
+  this.offset.y = this.offset.origin.y = ~~(window.innerHeight / (2 * tilesize));
   this.zoom = 1;
   return this;
 };
+
+TileGrid.prototype.filter = function(fn) {
+  return this.tiles.filter(fn);
+};
+
+TileGrid.prototype.centerOnScreen = function(x, y) {};
 
 TileGrid.prototype.setZoom = function(zoom) {
   if (zoom == null) {
@@ -108,8 +137,8 @@ TileGrid.prototype.move = function(x, y) {
 };
 
 TileGrid.prototype.AlignToOrigin = function() {
-  this.offset.origin.x = this.offset.origin.x;
-  this.offset.origin.y = this.offset.origin.y;
+  this.offset.x = this.offset.origin.x;
+  this.offset.y = this.offset.origin.y;
 };
 
 TileGrid.prototype.changeTile = function(x, y, tilename) {
@@ -284,7 +313,7 @@ Selector.prototype.select = function() {
   }
 };
 
-Selector.prototype.unitActions = function() {
+Selector.prototype.PlayerOwnedUnitActions = function() {
   var that;
   that = this;
   return {
@@ -428,14 +457,29 @@ Selector.prototype.moveRight = function() {
 };
 
 Selector.prototype.render = function() {
-  var ctx, dimensions, ls, tg;
-  ls = 1;
+  var ctx, d, dimensions, ls, q, tg;
+  ls = 2;
   tg = this.map.tilegrid;
-  dimensions = pixels(tg.dimensions.tilesize, this.position, tg.offset, tg.zoom);
+  dimensions = d = pixels(tg.dimensions.tilesize, this.position, tg.offset, tg.zoom);
   ctx = this.game.context;
+  ctx.globalAlpha = 1;
   ctx.strokeStyle = this.color || "#eee";
   ctx.lineWidth = ls;
-  return ctx.strokeRect(dimensions.x - ls, dimensions.y - ls, dimensions.size + ls, dimensions.size + ls);
+  q = dimensions.size * 0.25;
+  ctx.beginPath();
+  ctx.moveTo(d.x, d.y + q);
+  ctx.lineTo(d.x, d.y);
+  ctx.lineTo(d.x + q, d.y);
+  ctx.moveTo(d.endx - q, d.endy - d.size);
+  ctx.lineTo(d.endx, d.endy - d.size);
+  ctx.lineTo(d.endx, d.endy - d.size + q);
+  ctx.moveTo(d.x, d.endy - q);
+  ctx.lineTo(d.x, d.endy);
+  ctx.lineTo(d.x + q, d.endy);
+  ctx.moveTo(d.endx - q, d.endy);
+  ctx.lineTo(d.endx, d.endy);
+  ctx.lineTo(d.endx, d.endy - q);
+  return ctx.stroke();
 };
 
 module.exports.Selector = Selector;

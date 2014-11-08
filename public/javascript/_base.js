@@ -32,7 +32,7 @@ UI = require("./_ui");
 Player = require("./_players").Player;
 
 Game = function(canvas, width, height) {
-  var gameloop, render;
+  var frames, gameloop, render, start, that;
   this.canvas = canvas;
   this.width = width;
   this.height = height;
@@ -51,9 +51,17 @@ Game = function(canvas, width, height) {
   this.clock = new Clock();
   this.UnitManager = new UnitManager(this);
   this.UI = new UI.Manager(this);
-  this.players = [];
+  frames = 0;
+  start = Date.now();
+  that = this;
   render = function() {
-    return this.Layers.renderAll.call(this.Layers);
+    var fps;
+    that.Layers.renderAll.call(that.Layers);
+    frames++;
+    fps = (frames / (Date.now() - start)) * 1000;
+    that.context.fillStyle = '#fff';
+    that.context.fillText("FRAMES:" + frames, 25, 12);
+    return that.context.fillText("FPS: " + (~~fps), 25, 25);
   };
   this.__loop = this.clock.loop("render", render, [], this);
   this.__loop["for"]({
@@ -72,7 +80,7 @@ Game.prototype.initialize = function() {
   check = function() {
     left--;
     if (left === 0) {
-      console.log("%cGame is Initialized.", 'color:#4b4;');
+      console.log("%c\nGame is Initialized.\n", 'text-decoration: underline;');
       that.trigger("initialize");
       return console.groupEnd("Initializing");
     }
@@ -127,7 +135,7 @@ Game.prototype.getPlayerCount = function() {
 };
 
 Game.prototype.start = function(mode) {
-  var d, map, testUnit, that;
+  var map, testUnit, that;
   console.log("Starting...");
   this.clock.start();
   that = this;
@@ -136,20 +144,17 @@ Game.prototype.start = function(mode) {
   map.play.call(map);
 
   /* TESTING  FUNCTIONALITY */
-  console.groupCollapsed("%cUnit Object Test", "text-decoration: underline");
+  console.group("%cUnit Object Test", "text-decoration: underline");
   console.log(this.UnitManager);
   testUnit = this.UnitManager.create("soldier");
   testUnit.show();
+  testUnit.showMovementRange();
   console.log(testUnit);
-  console.groupEnd("%cUnit Object Test", "text-decoration: underline");
-  console.group("%cUserInterface Test", "text-decoration: underline");
-  d = this.UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show();
-  console.log(d);
-  d.relativeTo(this.currentMap.selector);
-  return console.groupEnd("%cUserInterface Test", "text-decoration: underline");
+  return console.groupEnd("%cUnit Object Test", "text-decoration: underline");
 };
 
 Game.prototype.pause = function() {
+  console.log("Game Paused");
   return this.clock.pause();
 };
 

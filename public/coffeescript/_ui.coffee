@@ -351,7 +351,6 @@ Menu::open = () ->
   #console.log @
   @profile_ = menuProfile_ = @profile_ or new input.InputProfile("menu-navigation", @game.inputHandler, @getActionBindings())
   @profile_.enable()
-  
   return @
 
 Menu::close = () ->
@@ -360,6 +359,7 @@ Menu::close = () ->
   @profile_.disable()
   @trigger "close"
   @hide()
+
 module.exports.Menu = Menu
 
 
@@ -394,7 +394,6 @@ Manager::Menu = (name, options) ->
   return menu
 
 Manager::render = () ->
-
   for item in @list
     item.render.call(item)
 

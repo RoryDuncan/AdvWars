@@ -16,7 +16,12 @@ input = require         "./_input"
 Clock = require         "./_clock"
 $ = require             "jquery"
 UI = require            "./_ui"
-Player = require(        "./_players").Player
+Player = require(       "./_players").Player
+
+
+
+
+
 
 Game = (@canvas, @width, @height) ->
   
@@ -39,16 +44,27 @@ Game = (@canvas, @width, @height) ->
   @clock = new Clock()
   @UnitManager = new UnitManager(@)
   @UI = new UI.Manager(@)
-  @players = []
 
+  frames = 0
+  start = Date.now()
 
+  that = @
   # internal render loop
   render = () ->
+
     # renders are layers ascendingly
-    @Layers.renderAll.call(@Layers)
+    that.Layers.renderAll.call(that.Layers)
+    frames++
+    fps = (frames / ( Date.now() - start)) * 1000
+
+    that.context.fillStyle = '#fff'
+    that.context.fillText "FRAMES:" + frames, 25, 12
+    that.context.fillText "FPS: " + (~~fps), 25, 25
 
   @__loop = @clock.loop "render", render, [], @
   @__loop.for({interval:17})
+
+
 
   return @
 
@@ -62,7 +78,7 @@ Game::initialize = () ->
   check = () ->
     left--
     if left is 0
-      console.log "%cGame is Initialized.", 'color:#4b4;'
+      console.log "%c\nGame is Initialized.\n", 'text-decoration: underline;'
       that.trigger "initialize"
       console.groupEnd "Initializing"
       
@@ -124,26 +140,29 @@ Game::start = (mode) ->
 
   # Unit functionality
 
-  console.groupCollapsed "%cUnit Object Test", "text-decoration: underline"
+  console.group "%cUnit Object Test", "text-decoration: underline"
   console.log @UnitManager
 
   testUnit = @UnitManager.create("soldier")
   testUnit.show()
+  testUnit.showMovementRange()
   console.log testUnit
 
   console.groupEnd "%cUnit Object Test", "text-decoration: underline"
 
   # User Interface functionality
 
-  console.group "%cUserInterface Test", "text-decoration: underline"
+  # console.groupCollapsed "%cUserInterface Test", "text-decoration: underline"
 
-  d = @UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show()
-  console.log d
-  d.relativeTo( @currentMap.selector )
+  # d = @UI.Dialogue().heading("Controls:").text("Numpad to move the map. |Arrow Keys to move the selector.").show()
+  # console.log d
+  # d.relativeTo( @currentMap.selector )
 
-  console.groupEnd "%cUserInterface Test", "text-decoration: underline"
+  # console.groupEnd "%cUserInterface Test", "text-decoration: underline"
+
 
 Game::pause = () ->
+  console.log "Game Paused"
   @clock.pause()
 
 Game::getMapJSON = (url) ->
@@ -247,9 +266,11 @@ Game::_createMap = (mapData) ->
 
 
 
+
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ #
 ###                      @TESTING                           ###
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ #
+
 
 
 

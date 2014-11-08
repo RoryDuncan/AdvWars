@@ -1,7 +1,7 @@
 {
 	"soldier":{
 		"image": "soldier",
-		"moveRange": 5,
+		"moveRange": 3,
 		"attackRange": 1,
 		"movementType": 0,
 		"damage": 4
